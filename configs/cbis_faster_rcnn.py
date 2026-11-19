@@ -142,9 +142,9 @@ train_dataloader = dict(
     sampler=dict(type='DefaultSampler', shuffle=True),
     dataset=dict(
         type='CbisDdsmDataset',
-        data_root=IMAGES_ROOT,
+        data_root='',                      # vazio: ann_file fica relativo a raiz do clone
         ann_file=ANNOTS_DIR + '/train.json',
-        data_prefix=dict(img=''),
+        data_prefix=dict(img=IMAGES_ROOT),  # pasta das imagens
         pipeline=train_pipeline
     )
 )
@@ -156,9 +156,9 @@ val_dataloader = dict(
     sampler=dict(type='DefaultSampler', shuffle=False),
     dataset=dict(
         type='CbisDdsmDataset',
-        data_root=IMAGES_ROOT,
+        data_root='',                      # vazio: ann_file fica relativo a raiz do clone
         ann_file=ANNOTS_DIR + '/val.json',
-        data_prefix=dict(img=''),
+        data_prefix=dict(img=IMAGES_ROOT),  # pasta das imagens
         pipeline=val_pipeline
     )
 )
@@ -219,9 +219,9 @@ test_dataloader = dict(
     sampler=dict(type='DefaultSampler', shuffle=False),
     dataset=dict(
         type='CbisDdsmDataset',
-        data_root=IMAGES_ROOT,
+        data_root='',                      # vazio: ann_file fica relativo a raiz do clone
         ann_file=ANNOTS_DIR + '/val.json',
-        data_prefix=dict(img=''),
+        data_prefix=dict(img=IMAGES_ROOT),  # pasta das imagens
         pipeline=val_pipeline
     )
 )

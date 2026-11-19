@@ -141,9 +141,9 @@ train_dataloader = dict(
     sampler=dict(type='DefaultSampler', shuffle=True),
     dataset=dict(
         type='VindrMammoDataset',
-        data_root=IMAGES_ROOT,
+        data_root='',                      # vazio: ann_file fica relativo a raiz do clone
         ann_file=ANNOTS_DIR + '/train.json',
-        data_prefix=dict(img=''),
+        data_prefix=dict(img=IMAGES_ROOT),  # pasta das imagens
         pipeline=train_pipeline
     )
 )
@@ -155,9 +155,9 @@ val_dataloader = dict(
     sampler=dict(type='DefaultSampler', shuffle=False),
     dataset=dict(
         type='VindrMammoDataset',
-        data_root=IMAGES_ROOT,
+        data_root='',                      # vazio: ann_file fica relativo a raiz do clone
         ann_file=ANNOTS_DIR + '/val.json',
-        data_prefix=dict(img=''),
+        data_prefix=dict(img=IMAGES_ROOT),  # pasta das imagens
         test_mode=True,
         pipeline=val_pipeline
     )
@@ -171,9 +171,9 @@ test_dataloader = dict(
     sampler=dict(type='DefaultSampler', shuffle=False),
     dataset=dict(
         type='VindrMammoDataset',
-        data_root=IMAGES_ROOT,
+        data_root='',                      # vazio: ann_file fica relativo a raiz do clone
         ann_file=ANNOTS_DIR + '/test.json',
-        data_prefix=dict(img=''),
+        data_prefix=dict(img=IMAGES_ROOT),  # pasta das imagens
         test_mode=True,
         pipeline=val_pipeline
     )
@@ -229,9 +229,9 @@ custom_hooks = [
             sampler=dict(type='DefaultSampler', shuffle=False),
             dataset=dict(
                 type='VindrMammoDataset',
-                data_root=IMAGES_ROOT,
+                data_root='',                      # vazio: ann_file fica relativo a raiz do clone
                 ann_file=ANNOTS_DIR + '/val.json',
-                data_prefix=dict(img=''),
+                data_prefix=dict(img=IMAGES_ROOT),  # pasta das imagens
                 pipeline=val_loss_pipeline
             )
         )
