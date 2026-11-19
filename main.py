@@ -14,7 +14,12 @@ Variáveis de ambiente (todas opcionais):
     VINDR_ROOT  pasta do VinDr-Mammo (com o finding_annotations.csv), para mostrar as
                 massas anotadas (padrão: VINDR_ROOT do config)
     ENSEMBLE    1 = Faster R-CNN + FCOS + ATSS fundidos com WBF (VinDR_ensemble.py);
-                os checkpoints vêm de WORK_DIRS (CONFIG e CHECKPOINT são ignorados)
+                os checkpoints vêm de WORK_DIRS (CONFIG e CHECKPOINT são ignorados).
+                Desde 19/11/2026 o ensemble é o PADRÃO quando nem CONFIG nem CHECKPOINT
+                estão definidos; ENSEMBLE=0 força o modelo único (CONFIG_PADRAO).
+                Com o ensemble, a interface oferece um seletor: ensemble ou cada modelo
+                sozinho (os 3 já estão carregados, sem custo extra de GPU), com as
+                métricas de resultados_ensemble/resultado_{val,test}.json.
     PESOS       pesos do WBF no ensemble, ex.: 1,1,1 (padrão: PESOS_PADRAO do ensemble)
     THR_MIN     score mínimo devolvido  (padrão: 0.05; o front filtra o resto)
     MODO_DEMO   1 = não carrega o modelo e devolve caixas falsas
@@ -22,6 +27,7 @@ Variáveis de ambiente (todas opcionais):
 
 import base64
 import io
+import json
 import logging
 import os
 import shutil
@@ -33,7 +39,7 @@ from contextlib import asynccontextmanager
 
 import numpy as np
 import pydicom
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 
@@ -64,7 +70,10 @@ estado = {
     "anotacoes": None,  # image_id -> [[x1, y1, x2, y2], ...] (do finding_annotations.csv)
     "ensemble": None,   # com ENSEMBLE=1: modelos de VinDR_ensemble.carregar_modelos()
     "pesos": None,      # pesos do WBF no ensemble
+    "opcoes": [],       # opções do seletor de modelo (ensemble e cada modelo), com métricas
 }
+OPCAO_ENSEMBLE = "ensemble"
+NOME_ENSEMBLE_RESULTADOS = "ENSEMBLE (WBF)"  # nome da linha do ensemble nos resultado_*.json
 ve = None  # VinDR_ensemble, importado só com ENSEMBLE=1
 trava = threading.Lock()  # uma inferência por vez na GPU
 
@@ -93,7 +102,8 @@ def carregar_modelo():
         return entrar_em_modo_demo("variável MODO_DEMO=1")
     if vi is None:
         return entrar_em_modo_demo(f"não foi possível importar VinDR_inference ({ERRO_IMPORT})")
-    if os.environ.get("ENSEMBLE") == "1":
+    ens = os.environ.get("ENSEMBLE")
+    if ens == "1" or (ens != "0" and not os.environ.get("CONFIG") and not os.environ.get("CHECKPOINT")):
         return carregar_ensemble()
     try:
         config = os.environ.get("CONFIG") or vi.CONFIG_PADRAO
@@ -112,7 +122,9 @@ def carregar_modelo():
         return entrar_em_modo_demo(f"falha ao carregar o modelo ({type(e).__name__}: {e})")
     estado.update(modo_demo=False, motivo_demo=None, config=config, checkpoint=checkpoint,
                   dispositivo=dispositivo, modelo=modelo, anotacoes=anotacoes,
-                  detector=cfg.model.type, recorte=recorte)
+                  detector=cfg.model.type, recorte=recorte,
+                  opcoes=[{"id": "unico", "nome": cfg.model.type, "checkpoint": checkpoint,
+                           "metricas": None, "metricas_ok": False}])
     log.info("Detector: %s | recorte da mama: %s", cfg.model.type, "sim" if recorte else "não")
     log.info("Modelo pronto.")
 
@@ -136,11 +148,47 @@ def carregar_ensemble():
     except (Exception, SystemExit) as e:
         return entrar_em_modo_demo(f"falha ao carregar o ensemble ({type(e).__name__}: {e})")
     tipos = " + ".join(m.cfg.model.type for _, _, _, m in modelos)
+    nome_ens = "Ensemble WBF (" + " + ".join(n for n, _, _, _ in modelos) + ")"
+    opcoes = [{"id": OPCAO_ENSEMBLE, "nome": nome_ens, "checkpoint": [k for _, _, k, _ in modelos],
+               "nome_resultados": NOME_ENSEMBLE_RESULTADOS}]
+    opcoes += [{"id": n, "nome": f"{n} (sozinho)", "checkpoint": k, "nome_resultados": n}
+               for n, _, k, _ in modelos]
+    ler_metricas(opcoes, {n: k for n, _, k, _ in modelos}, pesos)
     estado.update(modo_demo=False, motivo_demo=None, dispositivo=dispositivo, modelo=None,
                   ensemble=modelos, pesos=pesos, anotacoes=anotacoes, recorte=False,
-                  detector=f"Ensemble WBF ({tipos})",
+                  detector=nome_ens, opcoes=opcoes,
                   config=[c for _, c, _, _ in modelos], checkpoint=[k for _, _, k, _ in modelos])
     log.info("Ensemble pronto: %s | pesos %s", tipos, pesos)
+
+
+def ler_metricas(opcoes, ckpts, pesos):
+    """Métricas de cada opção, lidas de resultados_ensemble/resultado_{val,test}.json
+    (gerados pelo VinDR_ensemble.py). Só valem se o cache de detecções que gerou esses
+    resultados registra os MESMOS checkpoints carregados agora (metricas_ok)."""
+    pasta = os.path.join(PASTA, ve.PASTA_SAIDA)
+    por_split, ok = {}, True
+    for split in ("val", "test"):
+        try:
+            with open(os.path.join(pasta, f"resultado_{split}.json"), encoding="utf-8") as f:
+                r = json.load(f)
+            por_split[split] = {l["modelo"]: l for l in r["resultados"]}
+            por_split[split]["_pesos"] = r.get("pesos")
+            with open(os.path.join(pasta, f"deteccoes_{split}.json"), encoding="utf-8") as f:
+                reg = json.load(f).get("_checkpoints") or {}
+            if {n: os.path.normpath(c) for n, c in reg.items()} != {n: os.path.normpath(c) for n, c in ckpts.items()}:
+                ok = False
+        except (OSError, ValueError, KeyError) as e:
+            log.warning("Métricas de %s indisponíveis: %s", split, e)
+            ok = False
+    pesos_ok = all(por_split.get(s, {}).get("_pesos") in (None, list(pesos))
+                   for s in por_split)
+    for o in opcoes:
+        o["metricas"] = {s: {k: v for k, v in por_split[s].get(o["nome_resultados"], {}).items() if k != "modelo"}
+                         for s in por_split} or None
+        o["metricas_ok"] = ok and pesos_ok
+    if not ok:
+        log.warning("As métricas exibidas NÃO correspondem aos checkpoints carregados: rode "
+                    "python VinDR_ensemble.py --split val/test --refazer")
 
 
 def mapear_para_dicom(caminho_dcm, largura_png, altura_png):
@@ -222,6 +270,8 @@ def status():
         "dispositivo": estado["dispositivo"],
         "ensemble": estado["ensemble"] is not None,
         "pesos": estado["pesos"],
+        "opcoes": [{k: v for k, v in o.items() if k != "nome_resultados"} for o in estado["opcoes"]],
+        "opcao_padrao": estado["opcoes"][0]["id"] if estado["opcoes"] else None,
         "anotacoes_carregadas": estado["anotacoes"] is not None,
         "thr_min": THR_MIN,
         "thr_padrao": THR_PADRAO,  # valor inicial do controle deslizante (o mesmo da CLI)
@@ -229,7 +279,9 @@ def status():
 
 
 @app.post("/analisar")
-def analisar(arquivo: UploadFile = File(...)):  # "def": roda numa thread, não trava o servidor
+def analisar(arquivo: UploadFile = File(...), modelo: str = Form(OPCAO_ENSEMBLE)):  # "def": roda numa thread
+    # modelo: id de uma das opções do /status ("ensemble", "Faster R-CNN", "FCOS", "ATSS");
+    # ignorado no modo de modelo único e no modo demo
     nome = os.path.basename(arquivo.filename or "imagem.dicom")
     image_id, ext = os.path.splitext(nome)
     fd, caminho = tempfile.mkstemp(suffix=ext if ext.lower() in (".dcm", ".dicom") else ".dicom")
@@ -241,6 +293,11 @@ def analisar(arquivo: UploadFile = File(...)):  # "def": roda numa thread, não 
         except Exception:
             raise HTTPException(status_code=400, detail="O arquivo enviado não é um DICOM válido.")
 
+        opcao = estado["opcoes"][0] if estado["opcoes"] else None
+        if estado["ensemble"] is not None:
+            opcao = next((o for o in estado["opcoes"] if o["id"] == modelo), None)
+            if opcao is None:
+                raise HTTPException(status_code=400, detail=f"Modelo desconhecido: {modelo}")
         try:
             with trava:
                 inicio = time.perf_counter()
@@ -248,8 +305,9 @@ def analisar(arquivo: UploadFile = File(...)):  # "def": roda numa thread, não 
                     img, deteccoes, descartadas, anotacoes = detectar_demo(caminho, image_id)
                 else:
                     if estado["ensemble"] is not None:
+                        so = None if opcao["id"] == OPCAO_ENSEMBLE else opcao["id"]
                         img, deteccoes, descartadas = ve.detectar_ensemble(
-                            estado["ensemble"], caminho, THR_MIN, pesos=estado["pesos"])
+                            estado["ensemble"], caminho, THR_MIN, pesos=estado["pesos"], so=so)
                     else:
                         img, deteccoes, descartadas = vi.detectar(estado["modelo"], caminho, THR_MIN,
                                                                   recortar=estado["recorte"])
@@ -279,7 +337,8 @@ def analisar(arquivo: UploadFile = File(...)):  # "def": roda numa thread, não 
             "descartadas": descartadas,
             "tempo_s": round(tempo, 3),
             "dispositivo": estado["dispositivo"],
-            "modelo": estado["detector"],
+            "modelo": opcao["nome"] if (opcao and not estado["modo_demo"]) else estado["detector"],
+            "opcao": opcao["id"] if opcao else None,
             "modo_demo": estado["modo_demo"],
             **mapear_para_dicom(caminho, largura, altura),
         }

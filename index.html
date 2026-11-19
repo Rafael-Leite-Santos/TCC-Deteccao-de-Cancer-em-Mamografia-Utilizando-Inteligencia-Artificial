@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Detecção de Massas em Mamografia</title>
 <style>
+  [hidden] { display: none !important; }
   :root {
     --bg: #0a0c0f;
     --panel: #12151a;
@@ -150,6 +151,23 @@
   #lista .pos { grid-column: 2 / 4; color: var(--muted); font-size: 12px; }
   .vazio { color: var(--muted); margin: 0; }
 
+  /* Seletor de modelo e métricas (19/11/2026) */
+  #selModelo {
+    width: 100%; background: #12161b; color: var(--text); border: 1px solid var(--line);
+    border-radius: 6px; padding: 8px; font: inherit;
+  }
+  #metricas { width: 100%; margin-top: 10px; border-collapse: collapse; font-size: 11.5px; }
+  #metricas th { color: var(--muted); font-weight: 500; text-align: right; padding: 3px 3px; line-height: 1.2; }
+  #metricas td { text-align: right; padding: 5px 3px; border-top: 1px solid var(--line); }
+  #metricas th:first-child, #metricas td:first-child { text-align: left; padding-left: 6px; }
+  #metricas tr.sel td { background: #121b22; color: var(--text); font-weight: 600; }
+  #metricas tr.sel td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
+  #cardModelo details { margin-top: 8px; color: var(--muted); font-size: 12px; }
+  #cardModelo summary { cursor: pointer; color: var(--text); }
+  #cardModelo .leg { display: block; margin: 8px 0 0; }
+  #cardModelo .leg dt { color: var(--text); font-weight: 600; margin-top: 8px; }
+  #cardModelo .leg dd { text-align: left; margin: 2px 0 0; color: var(--muted); line-height: 1.4; }
+
   dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; }
   dt { color: var(--muted); }
   dd { margin: 0; text-align: right; overflow-wrap: anywhere; }
@@ -170,8 +188,8 @@
 <header>
   <div class="titles">
     <!-- EDITE AQUI: título e autoria do TCC -->
-    <h1>Título do TCC — Detecção de Massas em Mamografia</h1>
-    <p>Nome do autor · Curso · Instituição</p>
+    <h1>Desenvolvimento de uma Ferramenta de Detecção de Câncer em Exames de Mamografia Utilizando Inteligência Artificial</h1>
+    <p>Gustavo Alcântara & Rafael Leite · Eng. Eletrônica e de Telecomunicações · PUC Minas</p>
   </div>
   <button class="btn" id="btnNovo" hidden>Novo arquivo</button>
 </header>
@@ -220,6 +238,13 @@
     </div>
 
     <aside>
+      <div class="card" id="cardModelo" hidden>
+        <h2>Modelo</h2>
+        <select id="selModelo" aria-label="Modelo usado na análise"></select>
+        <table id="metricas" class="num"></table>
+        <p class="nota" id="notaMetricas"></p>
+      </div>
+
       <div class="card"><h2>Análise</h2><div id="status"></div></div>
 
       <div class="card">
@@ -266,9 +291,74 @@ function carregarStatus() {
       $("thr").dispatchEvent(new Event("input"));
     }
     mostrarDemo(s.modo_demo);
+    montarSeletor(s);
   }).catch(() => {});
 }
 carregarStatus();
+
+/* ================= Seletor de modelo e métricas (19/11/2026) ================= */
+// +1e-9: 0,6635 vira 66,4 (como no terminal), e não 66,3 por causa do arredondamento binário
+function pct(v) { return v == null ? "—" : (100 * v + 1e-9).toFixed(1).replace(".", ","); }
+function dec(v) { return v == null ? "—" : (+v + 1e-9).toFixed(2).replace(".", ","); }
+function curto(o) { return o.id === "ensemble" ? "Ensemble" : o.id.replace(" R-CNN", ""); }
+function montarSeletor(s) {
+  const ops = (s && s.opcoes) || [];
+  if (st.opcoes || !ops.length || s.modo_demo) return;   // monta uma vez; nada no modo demo
+  st.opcoes = ops;
+  st.modelo = st.modelo || s.opcao_padrao || ops[0].id;
+  $("selModelo").innerHTML = ops.map((o) => `<option value="${esc(o.id)}">${esc(o.nome)}</option>`).join("");
+  $("selModelo").value = st.modelo;
+  $("selModelo").disabled = ops.length < 2;
+  $("cardModelo").hidden = false;
+  desenharMetricas();
+}
+function desenharMetricas() {
+  const ops = st.opcoes || [];
+  const algumaOk = ops.some((o) => o.metricas && o.metricas.test);
+  $("metricas").innerHTML = algumaOk ? `<tr><th>mAP</th><th>Val<br>@0,50</th><th>Teste<br>@0,50</th>
+      <th>Teste<br>@0,75</th><th>TPR<br>teste</th><th>FPPI<br>teste</th></tr>` + ops.map((o) => {
+    const t = (o.metricas && o.metricas.test) || {}, v = (o.metricas && o.metricas.val) || {};
+    return `<tr class="${o.id === st.modelo ? "sel" : ""}" title="${esc(o.nome)}"><td>${esc(curto(o))}</td>
+      <td>${pct(v.mAP_50)}</td><td>${pct(t.mAP_50)}</td><td>${pct(t.mAP_75)}</td><td>${pct(t.TPR)}</td><td>${dec(t.FPPI)}</td></tr>`;
+  }).join("") : "";
+  const ok = ops.length && ops.every((o) => o.metricas_ok);
+  const nota = $("notaMetricas");
+  nota.className = "nota" + (algumaOk && !ok ? " alerta" : "");
+  if (!algumaOk) nota.textContent = "Métricas indisponíveis (rode o VinDR_ensemble.py em val e test).";
+  else if (!ok) nota.textContent = "Atenção: estas métricas não correspondem aos modelos carregados agora (rode o VinDR_ensemble.py --refazer).";
+  else nota.innerHTML = `<details><summary>Como ler as métricas</summary><dl class="leg">
+    <dt>mAP@0,50 (mean Average Precision)</dt>
+    <dd>Conta como acerto a caixa com no mínimo 50% de sobreposição com a do radiologista (interseção dividida
+      pela união das duas caixas): o modelo apontou o lugar certo, mesmo com a caixa imprecisa. Resume, de 0 a
+      100%, o equilíbrio entre achar as massas e não dar alarmes falsos, sem depender do controle deslizante.
+      É o critério usado no TCC para escolher os modelos.</dd>
+    <dt>mAP@0,75 (mean Average Precision)</dt>
+    <dd>A mesma nota, mas exigindo no mínimo 75% de sobreposição: a caixa precisa delimitar bem a massa. Mede a
+      precisão do contorno; um modelo pode ter @0,50 alto e @0,75 baixo (acha a massa, mas desenha mal a caixa),
+      como o FCOS.</dd>
+    <dt>TPR (True Positive Rate, sensibilidade)</dt>
+    <dd>Porcentagem das massas anotadas que o modelo encontrou (sobreposição ≥ 50% e score ≥ 0,30). Alto = perde menos massas.</dd>
+    <dt>FPPI (False Positives Per Image)</dt>
+    <dd>Média de caixas por imagem em lugares sem massa (alarmes falsos), com score ≥ 0,30. Baixo = menos caixas
+      erradas para o radiologista conferir.</dd>
+    <dt>TPR × FPPI e o controle deslizante</dt>
+    <dd>Subir o score mínimo esconde caixas fracas: o FPPI cai, mas o TPR também pode cair. Descer faz o contrário.
+      Os valores da tabela são para 0,30. Os scores do ensemble são mais baixos (média do WBF), então o TPR/FPPI
+      dele não se compara diretamente com o dos modelos isolados.</dd>
+    <dt>Validação × Teste</dt>
+    <dd>Validação (92 imagens): usada para escolher a época, a semente e os pesos; por isso tende a ser otimista.
+      Teste oficial do VinDr-Mammo (219 imagens, 237 massas): não foi usado para escolher nada, é a estimativa mais
+      honesta do desempenho.</dd>
+    <dt>Cuidado ao comparar</dt>
+    <dd>Cada valor vem de uma execução. Entre execuções iguais, o mAP@0,50 varia cerca de ±1,5 ponto; diferenças
+      menores que isso não indicam que um modelo é melhor. Protótipo acadêmico, não é diagnóstico.</dd>
+  </dl></details>`;
+}
+$("selModelo").addEventListener("change", () => {
+  st.modelo = $("selModelo").value;
+  desenharMetricas();
+  if (st.file) analisar();   // refaz a análise da imagem aberta com o modelo escolhido
+});
 
 function mostrarDemo(demo) {
   st.demo = !!demo;
@@ -326,6 +416,7 @@ async function analisar() {
 
   const fd = new FormData();
   fd.append("arquivo", st.file, st.file.name);
+  if (st.modelo) fd.append("modelo", st.modelo);
   let erro = null, dados = null;
   try {
     const r = await fetch(API_BASE + "/analisar", { method: "POST", body: fd });
