@@ -66,7 +66,7 @@ Para comparação, o pipeline original do Digital Eye está em [`docs/pipeline_d
 | `dicom_pipeline.py` | Leitura do DICOM com *windowing* e remoção de artefatos (`LoadDicomImage`) |
 | `prepare_cbis_final.py` | Gera as anotações COCO a partir das máscaras ROI (divisão 80/20) |
 | `mass_train.py` | Treinamento (`python mass_train.py [config]`) |
-| `mass_inference_dicom_v2.py` | Inferência em um DICOM. **Atenção:** hoje só imprime as detecções; o PNG é salvo **sem as caixas** e o filtro de "fora da mama" não é aplicado ao resultado |
+| `legado/mass_inference_dicom_v2.py` | Inferência em um DICOM. **Atenção:** hoje só imprime as detecções; o PNG é salvo **sem as caixas** e o filtro de "fora da mama" não é aplicado ao resultado |
 | `configs/cbis_faster_rcnn.py` | Faster R-CNN, 40 épocas, parada pelo mAP@0,50 |
 | `configs/cbis_cascade_rcnn.py` | Cascade R-CNN com o mesmo agendamento |
 | **VinDr-Mammo** | |
@@ -95,9 +95,9 @@ Para comparação, o pipeline original do Digital Eye está em [`docs/pipeline_d
 | `resultados/` | Resultados do ensemble (`resultado_*.json`) e logs de todos os treinos (`logs/`, com resumo em `logs/README.md`) |
 | `tests/` | Testes automáticos de `metricas.py` (`python -m unittest discover tests`) |
 | **Herdado do Digital Eye** (MMDetection 2.x; não usado pelo pipeline atual) | |
-| `mass_inference.py` | Inferência do Digital Eye (depende de `utils/all_utils`, que não está no repositório) |
-| `mammo_dataset.py` | Dataset do Digital Eye (API do MMDetection 2.x) |
-| `yolo_v3_config.py` | Config YOLOv3 do Digital Eye |
+| `legado/mass_inference.py` | Inferência do Digital Eye (depende de `utils/all_utils`, que não está no repositório) |
+| `legado/mammo_dataset.py` | Dataset do Digital Eye (API do MMDetection 2.x) |
+| `legado/yolo_v3_config.py` | Config YOLOv3 do Digital Eye |
 
 ---
 
@@ -184,7 +184,7 @@ python prepare_cbis_final.py
 python mass_train.py configs/cbis_faster_rcnn.py
 ```
 
-O `mass_inference_dicom_v2.py` não é recomendado por enquanto: ele não desenha as caixas no PNG de saída (veja a tabela de estrutura).
+O `legado/mass_inference_dicom_v2.py` não é recomendado por enquanto: ele não desenha as caixas no PNG de saída (veja a tabela de estrutura).
 
 ### Métricas (TPR e FPPI)
 
