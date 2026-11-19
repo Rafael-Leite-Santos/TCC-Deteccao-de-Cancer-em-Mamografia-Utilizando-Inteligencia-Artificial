@@ -1,0 +1,8 @@
+# Dependências do backend web (instalar no MESMO ambiente do mmdet)
+# python -m pip install -r requirements-web.txt
+fastapi>=0.100
+uvicorn>=0.23
+python-multipart>=0.0.6
+pydicom>=2.3.1
+numpy
+pillow

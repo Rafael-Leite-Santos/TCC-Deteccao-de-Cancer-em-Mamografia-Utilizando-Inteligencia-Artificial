@@ -1,0 +1,18 @@
+# Ambiente testado: Windows 11, Python 3.9, GPU NVIDIA com CUDA 12.x
+#
+# 1) PyTorch com CUDA 12.1 (instale ANTES do resto):
+#    pip install torch==2.1.0 torchvision==0.16.0 --index-url https://download.pytorch.org/whl/cu121
+#
+# 2) MMCV pre-compilado para torch 2.1 + CUDA 12.1 (evita compilar com o MSVC):
+#    pip install mmcv==2.1.0 -f https://download.openmmlab.com/mmcv/dist/cu121/torch2.1/index.html
+#
+# 3) Demais pacotes:
+#    pip install -r requirements.txt
+mmengine==0.10.7
+mmdet==3.3.0
+numpy==1.22.0
+scipy==1.10.1
+opencv-python==4.7.0.72
+pydicom==2.3.1
+pycocotools==2.0.11
+ensemble-boxes==1.0.9

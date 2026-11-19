@@ -1,0 +1,1182 @@
+2026/09/23 21:46:02 - mmengine - INFO - 
+------------------------------------------------------------
+System environment:
+    sys.platform: win32
+    Python: 3.9.13 (tags/v3.9.13:6de2ca5, May 17 2022, 16:36:42) [MSC v.1929 64 bit (AMD64)]
+    CUDA available: True
+    MUSA available: False
+    numpy_random_seed: 2053497779
+    GPU 0: NVIDIA GeForce RTX 4060 Laptop GPU
+    CUDA_HOME: C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.4
+    NVCC: Cuda compilation tools, release 12.4, V12.4.99
+    MSVC: Microsoft (R) C/C++ Optimizing Compiler Version 19.51.36260 for x64
+    GCC: n/a
+    PyTorch: 2.1.0+cu121
+    PyTorch compiling details: PyTorch built with:
+  - C++ Version: 199711
+  - MSVC 192930151
+  - Intel(R) Math Kernel Library Version 2020.0.2 Product Build 20200624 for Intel(R) 64 architecture applications
+  - Intel(R) MKL-DNN v3.1.1 (Git Hash 64f6bcbcbab628e96f33a62c3e975f8535a7bde4)
+  - OpenMP 2019
+  - LAPACK is enabled (usually provided by MKL)
+  - CPU capability usage: AVX2
+  - CUDA Runtime 12.1
+  - NVCC architecture flags: -gencode;arch=compute_50,code=sm_50;-gencode;arch=compute_60,code=sm_60;-gencode;arch=compute_61,code=sm_61;-gencode;arch=compute_70,code=sm_70;-gencode;arch=compute_75,code=sm_75;-gencode;arch=compute_80,code=sm_80;-gencode;arch=compute_86,code=sm_86;-gencode;arch=compute_90,code=sm_90
+  - CuDNN 8.8.1  (built against CUDA 12.0)
+  - Magma 2.5.4
+  - Build settings: BLAS_INFO=mkl, BUILD_TYPE=Release, CUDA_VERSION=12.1, CUDNN_VERSION=8.8.1, CXX_COMPILER=C:/actions-runner/_work/pytorch/pytorch/builder/windows/tmp_bin/sccache-cl.exe, CXX_FLAGS=/DWIN32 /D_WINDOWS /GR /EHsc /bigobj /FS -DUSE_PTHREADPOOL -DNDEBUG -DUSE_KINETO -DLIBKINETO_NOCUPTI -DLIBKINETO_NOROCTRACER -DUSE_FBGEMM -DUSE_XNNPACK -DSYMBOLICATE_MOBILE_DEBUG_HANDLE /utf-8 /wd4624 /wd4068 /wd4067 /wd4267 /wd4661 /wd4717 /wd4244 /wd4804 /wd4273, LAPACK_INFO=mkl, PERF_WITH_AVX=1, PERF_WITH_AVX2=1, PERF_WITH_AVX512=1, TORCH_DISABLE_GPU_ASSERTS=OFF, TORCH_VERSION=2.1.0, USE_CUDA=ON, USE_CUDNN=ON, USE_EXCEPTION_PTR=1, USE_GFLAGS=OFF, USE_GLOG=OFF, USE_MKL=ON, USE_MKLDNN=ON, USE_MPI=OFF, USE_NCCL=OFF, USE_NNPACK=OFF, USE_OPENMP=ON, USE_ROCM=OFF, 
+
+    TorchVision: 0.16.0+cu121
+    OpenCV: 4.7.0
+    MMEngine: 0.10.7
+
+Runtime environment:
+    dist_cfg: {'backend': 'nccl'}
+    seed: 2053497779
+    Distributed launcher: none
+    Distributed training: False
+    GPU number: 1
+------------------------------------------------------------
+
+2026/09/23 21:46:02 - mmengine - INFO - Config:
+ANNOTS_DIR = './annotations'
+IMAGES_ROOT = 'data/CBIS-DDSM/imagens_completas'
+custom_imports = dict(
+    allow_failed_imports=False, imports=[
+        'dicom_pipeline',
+    ])
+default_hooks = dict(
+    checkpoint=dict(interval=1, type='CheckpointHook'),
+    logger=dict(interval=50, type='LoggerHook'))
+default_scope = 'mmdet'
+model = dict(
+    backbone=dict(
+        depth=50,
+        frozen_stages=1,
+        init_cfg=dict(checkpoint='torchvision://resnet50', type='Pretrained'),
+        norm_cfg=dict(requires_grad=True, type='BN'),
+        norm_eval=True,
+        num_stages=4,
+        out_indices=(
+            0,
+            1,
+            2,
+            3,
+        ),
+        style='pytorch',
+        type='ResNet'),
+    data_preprocessor=dict(
+        bgr_to_rgb=True,
+        mean=[
+            123.675,
+            116.28,
+            103.53,
+        ],
+        pad_size_divisor=32,
+        std=[
+            58.395,
+            57.12,
+            57.375,
+        ],
+        type='DetDataPreprocessor'),
+    neck=dict(
+        in_channels=[
+            256,
+            512,
+            1024,
+            2048,
+        ],
+        num_outs=5,
+        out_channels=256,
+        type='FPN'),
+    roi_head=dict(
+        bbox_head=dict(
+            bbox_coder=dict(
+                target_means=[
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                ],
+                target_stds=[
+                    0.1,
+                    0.1,
+                    0.2,
+                    0.2,
+                ],
+                type='DeltaXYWHBBoxCoder'),
+            fc_out_channels=1024,
+            in_channels=256,
+            loss_bbox=dict(loss_weight=1.0, type='L1Loss'),
+            loss_cls=dict(
+                loss_weight=1.0, type='CrossEntropyLoss', use_sigmoid=False),
+            num_classes=1,
+            reg_class_agnostic=False,
+            roi_feat_size=7,
+            type='Shared2FCBBoxHead'),
+        bbox_roi_extractor=dict(
+            featmap_strides=[
+                4,
+                8,
+                16,
+                32,
+            ],
+            out_channels=256,
+            roi_layer=dict(output_size=7, sampling_ratio=0, type='RoIAlign'),
+            type='SingleRoIExtractor'),
+        type='StandardRoIHead'),
+    rpn_head=dict(
+        anchor_generator=dict(
+            ratios=[
+                0.5,
+                1.0,
+                2.0,
+            ],
+            scales=[
+                4,
+                8,
+                16,
+            ],
+            strides=[
+                4,
+                8,
+                16,
+                32,
+                64,
+            ],
+            type='AnchorGenerator'),
+        bbox_coder=dict(
+            target_means=[
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+            ],
+            target_stds=[
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+            ],
+            type='DeltaXYWHBBoxCoder'),
+        feat_channels=256,
+        in_channels=256,
+        loss_bbox=dict(loss_weight=1.0, type='L1Loss'),
+        loss_cls=dict(
+            loss_weight=1.0, type='CrossEntropyLoss', use_sigmoid=True),
+        type='RPNHead'),
+    test_cfg=dict(
+        rcnn=dict(
+            max_per_img=100,
+            nms=dict(iou_threshold=0.5, type='nms'),
+            score_thr=0.05),
+        rpn=dict(
+            max_per_img=1000,
+            min_bbox_size=0,
+            nms=dict(iou_threshold=0.7, type='nms'),
+            nms_pre=1000)),
+    train_cfg=dict(
+        rcnn=dict(
+            assigner=dict(
+                ignore_iof_thr=-1,
+                match_low_quality=False,
+                min_pos_iou=0.5,
+                neg_iou_thr=0.5,
+                pos_iou_thr=0.5,
+                type='MaxIoUAssigner'),
+            debug=False,
+            pos_weight=-1,
+            sampler=dict(
+                add_gt_as_proposals=True,
+                neg_pos_ub=-1,
+                num=512,
+                pos_fraction=0.25,
+                type='RandomSampler')),
+        rpn=dict(
+            allowed_border=-1,
+            assigner=dict(
+                ignore_iof_thr=-1,
+                match_low_quality=True,
+                min_pos_iou=0.3,
+                neg_iou_thr=0.3,
+                pos_iou_thr=0.7,
+                type='MaxIoUAssigner'),
+            debug=False,
+            pos_weight=-1,
+            sampler=dict(
+                add_gt_as_proposals=False,
+                neg_pos_ub=-1,
+                num=256,
+                pos_fraction=0.5,
+                type='RandomSampler')),
+        rpn_proposal=dict(
+            max_per_img=1000,
+            min_bbox_size=0,
+            nms=dict(iou_threshold=0.7, type='nms'),
+            nms_pre=2000)),
+    type='FasterRCNN')
+optim_wrapper = dict(
+    optimizer=dict(lr=0.0025, momentum=0.9, type='SGD', weight_decay=0.0001),
+    type='OptimWrapper')
+param_scheduler = [
+    dict(
+        begin=0, by_epoch=False, end=500, start_factor=0.001, type='LinearLR'),
+    dict(
+        begin=0,
+        by_epoch=True,
+        end=12,
+        gamma=0.1,
+        milestones=[
+            8,
+            11,
+        ],
+        type='MultiStepLR'),
+]
+train_cfg = dict(max_epochs=12, type='EpochBasedTrainLoop', val_interval=1)
+train_dataloader = dict(
+    batch_size=2,
+    dataset=dict(
+        ann_file='./annotations\\train.json',
+        data_prefix=dict(img=''),
+        data_root='data/CBIS-DDSM/imagens_completas',
+        pipeline=[
+            dict(type='LoadDicomImage', use_dicom_window=True),
+            dict(type='LoadAnnotations', with_bbox=True),
+            dict(keep_ratio=True, scale=(
+                1024,
+                1024,
+            ), type='Resize'),
+            dict(prob=0.5, type='RandomFlip'),
+            dict(type='PackDetInputs'),
+        ],
+        type='CbisDdsmDataset'),
+    num_workers=2,
+    persistent_workers=True,
+    sampler=dict(shuffle=True, type='DefaultSampler'))
+train_pipeline = [
+    dict(type='LoadDicomImage', use_dicom_window=True),
+    dict(type='LoadAnnotations', with_bbox=True),
+    dict(keep_ratio=True, scale=(
+        1024,
+        1024,
+    ), type='Resize'),
+    dict(prob=0.5, type='RandomFlip'),
+    dict(type='PackDetInputs'),
+]
+val_cfg = dict(type='ValLoop')
+val_dataloader = dict(
+    batch_size=1,
+    dataset=dict(
+        ann_file='./annotations\\val.json',
+        data_prefix=dict(img=''),
+        data_root='data/CBIS-DDSM/imagens_completas',
+        pipeline=[
+            dict(type='LoadDicomImage', use_dicom_window=True),
+            dict(keep_ratio=True, scale=(
+                1024,
+                1024,
+            ), type='Resize'),
+            dict(type='LoadAnnotations', with_bbox=True),
+            dict(type='PackDetInputs'),
+        ],
+        type='CbisDdsmDataset'),
+    num_workers=2,
+    persistent_workers=True,
+    sampler=dict(shuffle=False, type='DefaultSampler'))
+val_evaluator = dict(
+    ann_file='./annotations\\val.json',
+    format_only=False,
+    metric='bbox',
+    type='CocoMetric')
+val_pipeline = [
+    dict(type='LoadDicomImage', use_dicom_window=True),
+    dict(keep_ratio=True, scale=(
+        1024,
+        1024,
+    ), type='Resize'),
+    dict(type='LoadAnnotations', with_bbox=True),
+    dict(type='PackDetInputs'),
+]
+work_dir = './work_dirs/cbis_faster_rcnn'
+
+2026/09/23 21:46:03 - mmengine - INFO - Distributed training is not used, all SyncBatchNorm (SyncBN) layers in the model will be automatically reverted to BatchNormXd layers if they are used.
+2026/09/23 21:46:03 - mmengine - INFO - Hooks will be executed in the following order:
+before_run:
+(VERY_HIGH   ) RuntimeInfoHook                    
+(BELOW_NORMAL) LoggerHook                         
+ -------------------- 
+before_train:
+(VERY_HIGH   ) RuntimeInfoHook                    
+(NORMAL      ) IterTimerHook                      
+(VERY_LOW    ) CheckpointHook                     
+ -------------------- 
+before_train_epoch:
+(VERY_HIGH   ) RuntimeInfoHook                    
+(NORMAL      ) IterTimerHook                      
+(NORMAL      ) DistSamplerSeedHook                
+ -------------------- 
+before_train_iter:
+(VERY_HIGH   ) RuntimeInfoHook                    
+(NORMAL      ) IterTimerHook                      
+ -------------------- 
+after_train_iter:
+(VERY_HIGH   ) RuntimeInfoHook                    
+(NORMAL      ) IterTimerHook                      
+(BELOW_NORMAL) LoggerHook                         
+(LOW         ) ParamSchedulerHook                 
+(VERY_LOW    ) CheckpointHook                     
+ -------------------- 
+after_train_epoch:
+(NORMAL      ) IterTimerHook                      
+(LOW         ) ParamSchedulerHook                 
+(VERY_LOW    ) CheckpointHook                     
+ -------------------- 
+before_val:
+(VERY_HIGH   ) RuntimeInfoHook                    
+ -------------------- 
+before_val_epoch:
+(NORMAL      ) IterTimerHook                      
+ -------------------- 
+before_val_iter:
+(NORMAL      ) IterTimerHook                      
+ -------------------- 
+after_val_iter:
+(NORMAL      ) IterTimerHook                      
+(BELOW_NORMAL) LoggerHook                         
+ -------------------- 
+after_val_epoch:
+(VERY_HIGH   ) RuntimeInfoHook                    
+(NORMAL      ) IterTimerHook                      
+(BELOW_NORMAL) LoggerHook                         
+(LOW         ) ParamSchedulerHook                 
+(VERY_LOW    ) CheckpointHook                     
+ -------------------- 
+after_val:
+(VERY_HIGH   ) RuntimeInfoHook                    
+ -------------------- 
+after_train:
+(VERY_HIGH   ) RuntimeInfoHook                    
+(VERY_LOW    ) CheckpointHook                     
+ -------------------- 
+before_test:
+(VERY_HIGH   ) RuntimeInfoHook                    
+ -------------------- 
+before_test_epoch:
+(NORMAL      ) IterTimerHook                      
+ -------------------- 
+before_test_iter:
+(NORMAL      ) IterTimerHook                      
+ -------------------- 
+after_test_iter:
+(NORMAL      ) IterTimerHook                      
+(BELOW_NORMAL) LoggerHook                         
+ -------------------- 
+after_test_epoch:
+(VERY_HIGH   ) RuntimeInfoHook                    
+(NORMAL      ) IterTimerHook                      
+(BELOW_NORMAL) LoggerHook                         
+ -------------------- 
+after_test:
+(VERY_HIGH   ) RuntimeInfoHook                    
+ -------------------- 
+after_run:
+(BELOW_NORMAL) LoggerHook                         
+ -------------------- 
+2026/09/23 21:46:03 - mmengine - INFO - load model from: torchvision://resnet50
+2026/09/23 21:46:03 - mmengine - INFO - Loads checkpoint by torchvision backend from path: torchvision://resnet50
+2026/09/23 21:46:06 - mmengine - WARNING - The model and loaded state dict do not match exactly
+
+unexpected key in source state_dict: fc.weight, fc.bias
+
+Name of parameter - Initialization information
+
+backbone.conv1.weight - torch.Size([64, 3, 7, 7]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.bn1.weight - torch.Size([64]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.bn1.bias - torch.Size([64]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer1.0.conv1.weight - torch.Size([64, 64, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer1.0.bn1.weight - torch.Size([64]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer1.0.bn1.bias - torch.Size([64]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer1.0.conv2.weight - torch.Size([64, 64, 3, 3]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer1.0.bn2.weight - torch.Size([64]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer1.0.bn2.bias - torch.Size([64]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer1.0.conv3.weight - torch.Size([256, 64, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer1.0.bn3.weight - torch.Size([256]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer1.0.bn3.bias - torch.Size([256]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer1.0.downsample.0.weight - torch.Size([256, 64, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer1.0.downsample.1.weight - torch.Size([256]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer1.0.downsample.1.bias - torch.Size([256]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer1.1.conv1.weight - torch.Size([64, 256, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer1.1.bn1.weight - torch.Size([64]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer1.1.bn1.bias - torch.Size([64]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer1.1.conv2.weight - torch.Size([64, 64, 3, 3]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer1.1.bn2.weight - torch.Size([64]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer1.1.bn2.bias - torch.Size([64]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer1.1.conv3.weight - torch.Size([256, 64, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer1.1.bn3.weight - torch.Size([256]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer1.1.bn3.bias - torch.Size([256]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer1.2.conv1.weight - torch.Size([64, 256, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer1.2.bn1.weight - torch.Size([64]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer1.2.bn1.bias - torch.Size([64]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer1.2.conv2.weight - torch.Size([64, 64, 3, 3]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer1.2.bn2.weight - torch.Size([64]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer1.2.bn2.bias - torch.Size([64]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer1.2.conv3.weight - torch.Size([256, 64, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer1.2.bn3.weight - torch.Size([256]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer1.2.bn3.bias - torch.Size([256]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.0.conv1.weight - torch.Size([128, 256, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.0.bn1.weight - torch.Size([128]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.0.bn1.bias - torch.Size([128]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.0.conv2.weight - torch.Size([128, 128, 3, 3]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.0.bn2.weight - torch.Size([128]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.0.bn2.bias - torch.Size([128]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.0.conv3.weight - torch.Size([512, 128, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.0.bn3.weight - torch.Size([512]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.0.bn3.bias - torch.Size([512]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.0.downsample.0.weight - torch.Size([512, 256, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.0.downsample.1.weight - torch.Size([512]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.0.downsample.1.bias - torch.Size([512]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.1.conv1.weight - torch.Size([128, 512, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.1.bn1.weight - torch.Size([128]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.1.bn1.bias - torch.Size([128]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.1.conv2.weight - torch.Size([128, 128, 3, 3]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.1.bn2.weight - torch.Size([128]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.1.bn2.bias - torch.Size([128]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.1.conv3.weight - torch.Size([512, 128, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.1.bn3.weight - torch.Size([512]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.1.bn3.bias - torch.Size([512]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.2.conv1.weight - torch.Size([128, 512, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.2.bn1.weight - torch.Size([128]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.2.bn1.bias - torch.Size([128]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.2.conv2.weight - torch.Size([128, 128, 3, 3]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.2.bn2.weight - torch.Size([128]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.2.bn2.bias - torch.Size([128]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.2.conv3.weight - torch.Size([512, 128, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.2.bn3.weight - torch.Size([512]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.2.bn3.bias - torch.Size([512]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.3.conv1.weight - torch.Size([128, 512, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.3.bn1.weight - torch.Size([128]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.3.bn1.bias - torch.Size([128]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.3.conv2.weight - torch.Size([128, 128, 3, 3]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.3.bn2.weight - torch.Size([128]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.3.bn2.bias - torch.Size([128]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.3.conv3.weight - torch.Size([512, 128, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.3.bn3.weight - torch.Size([512]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.3.bn3.bias - torch.Size([512]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.0.conv1.weight - torch.Size([256, 512, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.0.bn1.weight - torch.Size([256]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.0.bn1.bias - torch.Size([256]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.0.conv2.weight - torch.Size([256, 256, 3, 3]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.0.bn2.weight - torch.Size([256]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.0.bn2.bias - torch.Size([256]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.0.conv3.weight - torch.Size([1024, 256, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.0.bn3.weight - torch.Size([1024]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.0.bn3.bias - torch.Size([1024]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.0.downsample.0.weight - torch.Size([1024, 512, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.0.downsample.1.weight - torch.Size([1024]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.0.downsample.1.bias - torch.Size([1024]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.1.conv1.weight - torch.Size([256, 1024, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.1.bn1.weight - torch.Size([256]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.1.bn1.bias - torch.Size([256]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.1.conv2.weight - torch.Size([256, 256, 3, 3]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.1.bn2.weight - torch.Size([256]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.1.bn2.bias - torch.Size([256]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.1.conv3.weight - torch.Size([1024, 256, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.1.bn3.weight - torch.Size([1024]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.1.bn3.bias - torch.Size([1024]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.2.conv1.weight - torch.Size([256, 1024, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.2.bn1.weight - torch.Size([256]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.2.bn1.bias - torch.Size([256]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.2.conv2.weight - torch.Size([256, 256, 3, 3]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.2.bn2.weight - torch.Size([256]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.2.bn2.bias - torch.Size([256]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.2.conv3.weight - torch.Size([1024, 256, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.2.bn3.weight - torch.Size([1024]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.2.bn3.bias - torch.Size([1024]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.3.conv1.weight - torch.Size([256, 1024, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.3.bn1.weight - torch.Size([256]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.3.bn1.bias - torch.Size([256]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.3.conv2.weight - torch.Size([256, 256, 3, 3]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.3.bn2.weight - torch.Size([256]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.3.bn2.bias - torch.Size([256]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.3.conv3.weight - torch.Size([1024, 256, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.3.bn3.weight - torch.Size([1024]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.3.bn3.bias - torch.Size([1024]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.4.conv1.weight - torch.Size([256, 1024, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.4.bn1.weight - torch.Size([256]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.4.bn1.bias - torch.Size([256]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.4.conv2.weight - torch.Size([256, 256, 3, 3]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.4.bn2.weight - torch.Size([256]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.4.bn2.bias - torch.Size([256]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.4.conv3.weight - torch.Size([1024, 256, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.4.bn3.weight - torch.Size([1024]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.4.bn3.bias - torch.Size([1024]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.5.conv1.weight - torch.Size([256, 1024, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.5.bn1.weight - torch.Size([256]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.5.bn1.bias - torch.Size([256]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.5.conv2.weight - torch.Size([256, 256, 3, 3]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.5.bn2.weight - torch.Size([256]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.5.bn2.bias - torch.Size([256]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.5.conv3.weight - torch.Size([1024, 256, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.5.bn3.weight - torch.Size([1024]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.5.bn3.bias - torch.Size([1024]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer4.0.conv1.weight - torch.Size([512, 1024, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer4.0.bn1.weight - torch.Size([512]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer4.0.bn1.bias - torch.Size([512]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer4.0.conv2.weight - torch.Size([512, 512, 3, 3]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer4.0.bn2.weight - torch.Size([512]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer4.0.bn2.bias - torch.Size([512]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer4.0.conv3.weight - torch.Size([2048, 512, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer4.0.bn3.weight - torch.Size([2048]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer4.0.bn3.bias - torch.Size([2048]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer4.0.downsample.0.weight - torch.Size([2048, 1024, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer4.0.downsample.1.weight - torch.Size([2048]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer4.0.downsample.1.bias - torch.Size([2048]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer4.1.conv1.weight - torch.Size([512, 2048, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer4.1.bn1.weight - torch.Size([512]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer4.1.bn1.bias - torch.Size([512]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer4.1.conv2.weight - torch.Size([512, 512, 3, 3]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer4.1.bn2.weight - torch.Size([512]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer4.1.bn2.bias - torch.Size([512]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer4.1.conv3.weight - torch.Size([2048, 512, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer4.1.bn3.weight - torch.Size([2048]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer4.1.bn3.bias - torch.Size([2048]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer4.2.conv1.weight - torch.Size([512, 2048, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer4.2.bn1.weight - torch.Size([512]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer4.2.bn1.bias - torch.Size([512]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer4.2.conv2.weight - torch.Size([512, 512, 3, 3]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer4.2.bn2.weight - torch.Size([512]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer4.2.bn2.bias - torch.Size([512]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer4.2.conv3.weight - torch.Size([2048, 512, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer4.2.bn3.weight - torch.Size([2048]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer4.2.bn3.bias - torch.Size([2048]): 
+PretrainedInit: load from torchvision://resnet50 
+
+neck.lateral_convs.0.conv.weight - torch.Size([256, 256, 1, 1]): 
+XavierInit: gain=1, distribution=uniform, bias=0 
+
+neck.lateral_convs.0.conv.bias - torch.Size([256]): 
+The value is the same before and after calling `init_weights` of FasterRCNN  
+
+neck.lateral_convs.1.conv.weight - torch.Size([256, 512, 1, 1]): 
+XavierInit: gain=1, distribution=uniform, bias=0 
+
+neck.lateral_convs.1.conv.bias - torch.Size([256]): 
+The value is the same before and after calling `init_weights` of FasterRCNN  
+
+neck.lateral_convs.2.conv.weight - torch.Size([256, 1024, 1, 1]): 
+XavierInit: gain=1, distribution=uniform, bias=0 
+
+neck.lateral_convs.2.conv.bias - torch.Size([256]): 
+The value is the same before and after calling `init_weights` of FasterRCNN  
+
+neck.lateral_convs.3.conv.weight - torch.Size([256, 2048, 1, 1]): 
+XavierInit: gain=1, distribution=uniform, bias=0 
+
+neck.lateral_convs.3.conv.bias - torch.Size([256]): 
+The value is the same before and after calling `init_weights` of FasterRCNN  
+
+neck.fpn_convs.0.conv.weight - torch.Size([256, 256, 3, 3]): 
+XavierInit: gain=1, distribution=uniform, bias=0 
+
+neck.fpn_convs.0.conv.bias - torch.Size([256]): 
+The value is the same before and after calling `init_weights` of FasterRCNN  
+
+neck.fpn_convs.1.conv.weight - torch.Size([256, 256, 3, 3]): 
+XavierInit: gain=1, distribution=uniform, bias=0 
+
+neck.fpn_convs.1.conv.bias - torch.Size([256]): 
+The value is the same before and after calling `init_weights` of FasterRCNN  
+
+neck.fpn_convs.2.conv.weight - torch.Size([256, 256, 3, 3]): 
+XavierInit: gain=1, distribution=uniform, bias=0 
+
+neck.fpn_convs.2.conv.bias - torch.Size([256]): 
+The value is the same before and after calling `init_weights` of FasterRCNN  
+
+neck.fpn_convs.3.conv.weight - torch.Size([256, 256, 3, 3]): 
+XavierInit: gain=1, distribution=uniform, bias=0 
+
+neck.fpn_convs.3.conv.bias - torch.Size([256]): 
+The value is the same before and after calling `init_weights` of FasterRCNN  
+
+rpn_head.rpn_conv.weight - torch.Size([256, 256, 3, 3]): 
+NormalInit: mean=0, std=0.01, bias=0 
+
+rpn_head.rpn_conv.bias - torch.Size([256]): 
+NormalInit: mean=0, std=0.01, bias=0 
+
+rpn_head.rpn_cls.weight - torch.Size([9, 256, 1, 1]): 
+NormalInit: mean=0, std=0.01, bias=0 
+
+rpn_head.rpn_cls.bias - torch.Size([9]): 
+NormalInit: mean=0, std=0.01, bias=0 
+
+rpn_head.rpn_reg.weight - torch.Size([36, 256, 1, 1]): 
+NormalInit: mean=0, std=0.01, bias=0 
+
+rpn_head.rpn_reg.bias - torch.Size([36]): 
+NormalInit: mean=0, std=0.01, bias=0 
+
+roi_head.bbox_head.fc_cls.weight - torch.Size([2, 1024]): 
+NormalInit: mean=0, std=0.01, bias=0 
+
+roi_head.bbox_head.fc_cls.bias - torch.Size([2]): 
+NormalInit: mean=0, std=0.01, bias=0 
+
+roi_head.bbox_head.fc_reg.weight - torch.Size([4, 1024]): 
+NormalInit: mean=0, std=0.001, bias=0 
+
+roi_head.bbox_head.fc_reg.bias - torch.Size([4]): 
+NormalInit: mean=0, std=0.001, bias=0 
+
+roi_head.bbox_head.shared_fcs.0.weight - torch.Size([1024, 12544]): 
+XavierInit: gain=1, distribution=uniform, bias=0 
+
+roi_head.bbox_head.shared_fcs.0.bias - torch.Size([1024]): 
+XavierInit: gain=1, distribution=uniform, bias=0 
+
+roi_head.bbox_head.shared_fcs.1.weight - torch.Size([1024, 1024]): 
+XavierInit: gain=1, distribution=uniform, bias=0 
+
+roi_head.bbox_head.shared_fcs.1.bias - torch.Size([1024]): 
+XavierInit: gain=1, distribution=uniform, bias=0 
+2026/09/23 21:46:06 - mmengine - WARNING - "FileClient" will be deprecated in future. Please use io functions in https://mmengine.readthedocs.io/en/latest/api/fileio.html#file-io
+2026/09/23 21:46:06 - mmengine - WARNING - "HardDiskBackend" is the alias of "LocalBackend" and the former will be deprecated in future.
+2026/09/23 21:46:06 - mmengine - INFO - Checkpoints will be saved to ./work_dirs\cbis_faster_rcnn.
+2026/09/23 21:46:59 - mmengine - INFO - Epoch(train)  [1][ 50/492]  lr: 2.4775e-04  eta: 1:44:21  time: 0.9564  data_time: 0.6781  memory: 2583  loss: 0.7340  loss_rpn_cls: 0.6531  loss_rpn_bbox: 0.0207  loss_cls: 0.0300  acc: 99.1211  loss_bbox: 0.0302
+2026/09/23 21:47:45 - mmengine - INFO - Epoch(train)  [1][100/492]  lr: 4.9800e-04  eta: 1:35:43  time: 0.9127  data_time: 0.6458  memory: 2489  loss: 0.2528  loss_rpn_cls: 0.0460  loss_rpn_bbox: 0.0213  loss_cls: 0.0689  acc: 95.3125  loss_bbox: 0.1166
+2026/09/23 21:48:28 - mmengine - INFO - Epoch(train)  [1][150/492]  lr: 7.4825e-04  eta: 1:30:38  time: 0.8376  data_time: 0.5636  memory: 2674  loss: 0.1705  loss_rpn_cls: 0.0186  loss_rpn_bbox: 0.0294  loss_cls: 0.0382  acc: 98.5352  loss_bbox: 0.0843
+2026/09/23 21:49:15 - mmengine - INFO - Epoch(train)  [1][200/492]  lr: 9.9850e-04  eta: 1:29:51  time: 0.8791  data_time: 0.6218  memory: 2582  loss: 0.1534  loss_rpn_cls: 0.0189  loss_rpn_bbox: 0.0272  loss_cls: 0.0351  acc: 98.3398  loss_bbox: 0.0720
+2026/09/23 21:50:01 - mmengine - INFO - Epoch(train)  [1][250/492]  lr: 1.2487e-03  eta: 1:28:41  time: 0.8447  data_time: 0.5452  memory: 2855  loss: 0.1251  loss_rpn_cls: 0.0162  loss_rpn_bbox: 0.0339  loss_cls: 0.0267  acc: 99.3164  loss_bbox: 0.0483
+2026/09/23 21:50:45 - mmengine - INFO - Epoch(train)  [1][300/492]  lr: 1.4990e-03  eta: 1:26:47  time: 0.8625  data_time: 0.5921  memory: 2582  loss: 0.1148  loss_rpn_cls: 0.0183  loss_rpn_bbox: 0.0232  loss_cls: 0.0273  acc: 99.0234  loss_bbox: 0.0459
+2026/09/23 21:51:30 - mmengine - INFO - Epoch(train)  [1][350/492]  lr: 1.7492e-03  eta: 1:25:34  time: 0.8266  data_time: 0.5632  memory: 2582  loss: 0.1161  loss_rpn_cls: 0.0148  loss_rpn_bbox: 0.0196  loss_cls: 0.0254  acc: 99.3164  loss_bbox: 0.0563
+2026/09/23 21:52:14 - mmengine - INFO - Epoch(train)  [1][400/492]  lr: 1.9995e-03  eta: 1:24:28  time: 0.9151  data_time: 0.6469  memory: 2855  loss: 0.0783  loss_rpn_cls: 0.0104  loss_rpn_bbox: 0.0089  loss_cls: 0.0260  acc: 99.2188  loss_bbox: 0.0330
+2026/09/23 21:52:59 - mmengine - INFO - Epoch(train)  [1][450/492]  lr: 2.2497e-03  eta: 1:23:26  time: 0.8445  data_time: 0.5842  memory: 2673  loss: 0.0765  loss_rpn_cls: 0.0106  loss_rpn_bbox: 0.0078  loss_cls: 0.0213  acc: 99.4141  loss_bbox: 0.0369
+2026/09/23 21:53:37 - mmengine - INFO - Exp name: cbis_faster_rcnn_20260923_214600
+2026/09/23 21:53:37 - mmengine - INFO - Saving checkpoint at 1 epochs
+2026/09/23 21:54:08 - mmengine - INFO - Epoch(val)  [1][ 50/247]    eta: 0:01:56  time: 0.4404  data_time: 0.3885  memory: 2674  
+2026/09/23 21:54:32 - mmengine - INFO - Epoch(val)  [1][100/247]    eta: 0:01:18  time: 0.4899  data_time: 0.4213  memory: 617  
+2026/09/23 21:54:54 - mmengine - INFO - Epoch(val)  [1][150/247]    eta: 0:00:48  time: 0.4407  data_time: 0.3814  memory: 623  
+2026/09/23 21:55:17 - mmengine - INFO - Epoch(val)  [1][200/247]    eta: 0:00:23  time: 0.4094  data_time: 0.3489  memory: 623  
+2026/09/23 21:55:41 - mmengine - INFO - Evaluating bbox...
+2026/09/23 21:55:41 - mmengine - INFO - bbox_mAP_copypaste: 0.833 0.941 0.941 -1.000 -1.000 0.833
+2026/09/23 21:55:41 - mmengine - INFO - Epoch(val) [1][247/247]    coco/bbox_mAP: 0.8330  coco/bbox_mAP_50: 0.9410  coco/bbox_mAP_75: 0.9410  coco/bbox_mAP_s: -1.0000  coco/bbox_mAP_m: -1.0000  coco/bbox_mAP_l: 0.8330  data_time: 0.4293  time: 0.4959
+2026/09/23 21:56:31 - mmengine - INFO - Epoch(train)  [2][ 50/492]  lr: 2.5000e-03  eta: 1:22:38  time: 0.9778  data_time: 0.7132  memory: 2582  loss: 0.0848  loss_rpn_cls: 0.0133  loss_rpn_bbox: 0.0106  loss_cls: 0.0206  acc: 99.2188  loss_bbox: 0.0403
+2026/09/23 21:57:18 - mmengine - INFO - Epoch(train)  [2][100/492]  lr: 2.5000e-03  eta: 1:21:58  time: 0.9527  data_time: 0.6592  memory: 2674  loss: 0.0894  loss_rpn_cls: 0.0079  loss_rpn_bbox: 0.0250  loss_cls: 0.0213  acc: 98.3398  loss_bbox: 0.0352
+2026/09/23 21:58:05 - mmengine - INFO - Epoch(train)  [2][150/492]  lr: 2.5000e-03  eta: 1:21:16  time: 0.9104  data_time: 0.6292  memory: 2582  loss: 0.0786  loss_rpn_cls: 0.0104  loss_rpn_bbox: 0.0183  loss_cls: 0.0163  acc: 98.9258  loss_bbox: 0.0335
+2026/09/23 21:58:51 - mmengine - INFO - Epoch(train)  [2][200/492]  lr: 2.5000e-03  eta: 1:20:28  time: 0.8922  data_time: 0.6227  memory: 2674  loss: 0.0785  loss_rpn_cls: 0.0087  loss_rpn_bbox: 0.0175  loss_cls: 0.0221  acc: 98.9258  loss_bbox: 0.0301
+2026/09/23 21:59:35 - mmengine - INFO - Epoch(train)  [2][250/492]  lr: 2.5000e-03  eta: 1:19:23  time: 0.7717  data_time: 0.4911  memory: 2489  loss: 0.0668  loss_rpn_cls: 0.0055  loss_rpn_bbox: 0.0174  loss_cls: 0.0142  acc: 99.1211  loss_bbox: 0.0297
+2026/09/23 22:00:18 - mmengine - INFO - Epoch(train)  [2][300/492]  lr: 2.5000e-03  eta: 1:18:21  time: 0.8363  data_time: 0.5668  memory: 2489  loss: 0.0529  loss_rpn_cls: 0.0067  loss_rpn_bbox: 0.0075  loss_cls: 0.0114  acc: 99.6094  loss_bbox: 0.0273
+2026/09/23 22:01:01 - mmengine - INFO - Epoch(train)  [2][350/492]  lr: 2.5000e-03  eta: 1:17:15  time: 0.8153  data_time: 0.5333  memory: 2855  loss: 0.0615  loss_rpn_cls: 0.0064  loss_rpn_bbox: 0.0222  loss_cls: 0.0110  acc: 99.2188  loss_bbox: 0.0219
+2026/09/23 22:01:44 - mmengine - INFO - Epoch(train)  [2][400/492]  lr: 2.5000e-03  eta: 1:16:13  time: 0.8312  data_time: 0.5507  memory: 2582  loss: 0.0470  loss_rpn_cls: 0.0054  loss_rpn_bbox: 0.0099  loss_cls: 0.0111  acc: 99.7070  loss_bbox: 0.0206
+2026/09/23 22:02:28 - mmengine - INFO - Epoch(train)  [2][450/492]  lr: 2.5000e-03  eta: 1:15:21  time: 0.9204  data_time: 0.6513  memory: 2767  loss: 0.0673  loss_rpn_cls: 0.0069  loss_rpn_bbox: 0.0246  loss_cls: 0.0142  acc: 99.7070  loss_bbox: 0.0216
+2026/09/23 22:03:04 - mmengine - INFO - Exp name: cbis_faster_rcnn_20260923_214600
+2026/09/23 22:03:04 - mmengine - INFO - Saving checkpoint at 2 epochs
+2026/09/23 22:03:27 - mmengine - INFO - Epoch(val)  [2][ 50/247]    eta: 0:01:25  time: 0.4303  data_time: 0.3580  memory: 2582  
+2026/09/23 22:03:50 - mmengine - INFO - Epoch(val)  [2][100/247]    eta: 0:01:04  time: 0.4669  data_time: 0.4128  memory: 617  
+2026/09/23 22:04:11 - mmengine - INFO - Epoch(val)  [2][150/247]    eta: 0:00:42  time: 0.4227  data_time: 0.3586  memory: 623  
+2026/09/23 22:04:33 - mmengine - INFO - Epoch(val)  [2][200/247]    eta: 0:00:20  time: 0.3960  data_time: 0.3383  memory: 623  
+2026/09/23 22:04:55 - mmengine - INFO - Evaluating bbox...
+2026/09/23 22:04:55 - mmengine - INFO - bbox_mAP_copypaste: 0.896 0.941 0.941 -1.000 -1.000 0.896
+2026/09/23 22:04:55 - mmengine - INFO - Epoch(val) [2][247/247]    coco/bbox_mAP: 0.8960  coco/bbox_mAP_50: 0.9410  coco/bbox_mAP_75: 0.9410  coco/bbox_mAP_s: -1.0000  coco/bbox_mAP_m: -1.0000  coco/bbox_mAP_l: 0.8960  data_time: 0.3798  time: 0.4417
+2026/09/23 22:05:10 - mmengine - INFO - Exp name: cbis_faster_rcnn_20260923_214600
+2026/09/23 22:05:40 - mmengine - INFO - Epoch(train)  [3][ 50/492]  lr: 2.5000e-03  eta: 1:13:47  time: 0.9905  data_time: 0.6925  memory: 2582  loss: 0.0574  loss_rpn_cls: 0.0058  loss_rpn_bbox: 0.0253  loss_cls: 0.0113  acc: 99.9023  loss_bbox: 0.0151
+2026/09/23 22:06:23 - mmengine - INFO - Epoch(train)  [3][100/492]  lr: 2.5000e-03  eta: 1:12:51  time: 0.8707  data_time: 0.5988  memory: 2855  loss: 0.0466  loss_rpn_cls: 0.0048  loss_rpn_bbox: 0.0166  loss_cls: 0.0094  acc: 99.2188  loss_bbox: 0.0159
+2026/09/23 22:07:06 - mmengine - INFO - Epoch(train)  [3][150/492]  lr: 2.5000e-03  eta: 1:11:53  time: 0.8453  data_time: 0.5832  memory: 2582  loss: 0.0531  loss_rpn_cls: 0.0041  loss_rpn_bbox: 0.0157  loss_cls: 0.0132  acc: 99.1211  loss_bbox: 0.0201
+2026/09/23 22:07:49 - mmengine - INFO - Epoch(train)  [3][200/492]  lr: 2.5000e-03  eta: 1:11:01  time: 0.9449  data_time: 0.6491  memory: 2582  loss: 0.0426  loss_rpn_cls: 0.0040  loss_rpn_bbox: 0.0074  loss_cls: 0.0102  acc: 99.9023  loss_bbox: 0.0210
+2026/09/23 22:08:30 - mmengine - INFO - Epoch(train)  [3][250/492]  lr: 2.5000e-03  eta: 1:10:00  time: 0.7274  data_time: 0.4692  memory: 2767  loss: 0.0466  loss_rpn_cls: 0.0059  loss_rpn_bbox: 0.0137  loss_cls: 0.0085  acc: 99.4141  loss_bbox: 0.0184
+2026/09/23 22:09:14 - mmengine - INFO - Epoch(train)  [3][300/492]  lr: 2.5000e-03  eta: 1:09:10  time: 0.8629  data_time: 0.5802  memory: 2582  loss: 0.0482  loss_rpn_cls: 0.0049  loss_rpn_bbox: 0.0155  loss_cls: 0.0093  acc: 99.6094  loss_bbox: 0.0185
+2026/09/23 22:09:54 - mmengine - INFO - Epoch(train)  [3][350/492]  lr: 2.5000e-03  eta: 1:08:09  time: 0.7970  data_time: 0.5384  memory: 2582  loss: 0.0341  loss_rpn_cls: 0.0045  loss_rpn_bbox: 0.0064  loss_cls: 0.0093  acc: 99.6094  loss_bbox: 0.0139
+2026/09/23 22:10:38 - mmengine - INFO - Epoch(train)  [3][400/492]  lr: 2.5000e-03  eta: 1:07:20  time: 0.8976  data_time: 0.6285  memory: 2855  loss: 0.0369  loss_rpn_cls: 0.0045  loss_rpn_bbox: 0.0117  loss_cls: 0.0060  acc: 100.0000  loss_bbox: 0.0148
+2026/09/23 22:11:20 - mmengine - INFO - Epoch(train)  [3][450/492]  lr: 2.5000e-03  eta: 1:06:30  time: 0.9084  data_time: 0.6305  memory: 2582  loss: 0.0366  loss_rpn_cls: 0.0040  loss_rpn_bbox: 0.0078  loss_cls: 0.0079  acc: 99.2188  loss_bbox: 0.0169
+2026/09/23 22:11:57 - mmengine - INFO - Exp name: cbis_faster_rcnn_20260923_214600
+2026/09/23 22:11:57 - mmengine - INFO - Saving checkpoint at 3 epochs
+2026/09/23 22:12:20 - mmengine - INFO - Epoch(val)  [3][ 50/247]    eta: 0:01:25  time: 0.4309  data_time: 0.3444  memory: 2674  
+2026/09/23 22:12:43 - mmengine - INFO - Epoch(val)  [3][100/247]    eta: 0:01:04  time: 0.4700  data_time: 0.3727  memory: 617  
+2026/09/23 22:13:04 - mmengine - INFO - Epoch(val)  [3][150/247]    eta: 0:00:42  time: 0.4270  data_time: 0.3364  memory: 623  
+2026/09/23 22:13:26 - mmengine - INFO - Epoch(val)  [3][200/247]    eta: 0:00:20  time: 0.3975  data_time: 0.3092  memory: 623  
+2026/09/23 22:13:47 - mmengine - INFO - Evaluating bbox...
+2026/09/23 22:13:47 - mmengine - INFO - bbox_mAP_copypaste: 0.932 0.941 0.941 -1.000 -1.000 0.932
+2026/09/23 22:13:47 - mmengine - INFO - Epoch(val) [3][247/247]    coco/bbox_mAP: 0.9320  coco/bbox_mAP_50: 0.9410  coco/bbox_mAP_75: 0.9410  coco/bbox_mAP_s: -1.0000  coco/bbox_mAP_m: -1.0000  coco/bbox_mAP_l: 0.9320  data_time: 0.3506  time: 0.4413
+2026/09/23 22:14:32 - mmengine - INFO - Epoch(train)  [4][ 50/492]  lr: 2.5000e-03  eta: 1:05:04  time: 0.9057  data_time: 0.6193  memory: 2674  loss: 0.0363  loss_rpn_cls: 0.0029  loss_rpn_bbox: 0.0116  loss_cls: 0.0091  acc: 99.3164  loss_bbox: 0.0127
+2026/09/23 22:15:14 - mmengine - INFO - Epoch(train)  [4][100/492]  lr: 2.5000e-03  eta: 1:04:13  time: 0.8681  data_time: 0.6016  memory: 2583  loss: 0.0389  loss_rpn_cls: 0.0053  loss_rpn_bbox: 0.0131  loss_cls: 0.0074  acc: 99.7070  loss_bbox: 0.0131
+2026/09/23 22:15:58 - mmengine - INFO - Epoch(train)  [4][150/492]  lr: 2.5000e-03  eta: 1:03:27  time: 0.9035  data_time: 0.6368  memory: 2582  loss: 0.0318  loss_rpn_cls: 0.0039  loss_rpn_bbox: 0.0059  loss_cls: 0.0060  acc: 99.9023  loss_bbox: 0.0160
+2026/09/23 22:16:39 - mmengine - INFO - Epoch(train)  [4][200/492]  lr: 2.5000e-03  eta: 1:02:35  time: 0.8779  data_time: 0.6155  memory: 2582  loss: 0.0425  loss_rpn_cls: 0.0044  loss_rpn_bbox: 0.0146  loss_cls: 0.0086  acc: 99.8047  loss_bbox: 0.0149
+2026/09/23 22:17:23 - mmengine - INFO - Epoch(train)  [4][250/492]  lr: 2.5000e-03  eta: 1:01:49  time: 0.8440  data_time: 0.5751  memory: 2582  loss: 0.0347  loss_rpn_cls: 0.0052  loss_rpn_bbox: 0.0126  loss_cls: 0.0054  acc: 99.8047  loss_bbox: 0.0115
+2026/09/23 22:18:05 - mmengine - INFO - Epoch(train)  [4][300/492]  lr: 2.5000e-03  eta: 1:00:59  time: 0.8234  data_time: 0.5604  memory: 2489  loss: 0.0319  loss_rpn_cls: 0.0039  loss_rpn_bbox: 0.0082  loss_cls: 0.0062  acc: 99.7070  loss_bbox: 0.0135
+2026/09/23 22:18:49 - mmengine - INFO - Epoch(train)  [4][350/492]  lr: 2.5000e-03  eta: 1:00:14  time: 1.0238  data_time: 0.7206  memory: 2855  loss: 0.0311  loss_rpn_cls: 0.0034  loss_rpn_bbox: 0.0101  loss_cls: 0.0058  acc: 99.7070  loss_bbox: 0.0118
+2026/09/23 22:19:31 - mmengine - INFO - Epoch(train)  [4][400/492]  lr: 2.5000e-03  eta: 0:59:26  time: 0.8344  data_time: 0.5517  memory: 2855  loss: 0.0524  loss_rpn_cls: 0.0092  loss_rpn_bbox: 0.0202  loss_cls: 0.0093  acc: 99.6094  loss_bbox: 0.0137
+2026/09/23 22:20:14 - mmengine - INFO - Epoch(train)  [4][450/492]  lr: 2.5000e-03  eta: 0:58:37  time: 0.8485  data_time: 0.5711  memory: 2674  loss: 0.0294  loss_rpn_cls: 0.0036  loss_rpn_bbox: 0.0103  loss_cls: 0.0049  acc: 99.8047  loss_bbox: 0.0107
+2026/09/23 22:20:49 - mmengine - INFO - Exp name: cbis_faster_rcnn_20260923_214600
+2026/09/23 22:20:49 - mmengine - INFO - Saving checkpoint at 4 epochs
+2026/09/23 22:21:13 - mmengine - INFO - Epoch(val)  [4][ 50/247]    eta: 0:01:28  time: 0.4520  data_time: 0.3814  memory: 2582  
+2026/09/23 22:21:37 - mmengine - INFO - Epoch(val)  [4][100/247]    eta: 0:01:07  time: 0.4946  data_time: 0.4356  memory: 617  
+2026/09/23 22:21:58 - mmengine - INFO - Epoch(val)  [4][150/247]    eta: 0:00:43  time: 0.4454  data_time: 0.3889  memory: 623  
+2026/09/23 22:22:22 - mmengine - INFO - Epoch(val)  [4][200/247]    eta: 0:00:21  time: 0.4700  data_time: 0.3822  memory: 623  
+2026/09/23 22:22:44 - mmengine - INFO - Evaluating bbox...
+2026/09/23 22:22:44 - mmengine - INFO - bbox_mAP_copypaste: 0.941 0.941 0.941 -1.000 -1.000 0.941
+2026/09/23 22:22:44 - mmengine - INFO - Epoch(val) [4][247/247]    coco/bbox_mAP: 0.9410  coco/bbox_mAP_50: 0.9410  coco/bbox_mAP_75: 0.9410  coco/bbox_mAP_s: -1.0000  coco/bbox_mAP_m: -1.0000  coco/bbox_mAP_l: 0.9410  data_time: 0.3822  time: 0.4581
+2026/09/23 22:23:11 - mmengine - INFO - Exp name: cbis_faster_rcnn_20260923_214600
+2026/09/23 22:23:26 - mmengine - INFO - Epoch(train)  [5][ 50/492]  lr: 2.5000e-03  eta: 0:57:09  time: 0.8566  data_time: 0.5826  memory: 2674  loss: 0.0235  loss_rpn_cls: 0.0027  loss_rpn_bbox: 0.0062  loss_cls: 0.0041  acc: 100.0000  loss_bbox: 0.0105
+2026/09/23 22:24:12 - mmengine - INFO - Epoch(train)  [5][100/492]  lr: 2.5000e-03  eta: 0:56:27  time: 0.8921  data_time: 0.6146  memory: 2490  loss: 0.0447  loss_rpn_cls: 0.0058  loss_rpn_bbox: 0.0252  loss_cls: 0.0061  acc: 99.7070  loss_bbox: 0.0076
+2026/09/23 22:24:55 - mmengine - INFO - Epoch(train)  [5][150/492]  lr: 2.5000e-03  eta: 0:55:42  time: 0.8935  data_time: 0.6184  memory: 2674  loss: 0.0254  loss_rpn_cls: 0.0023  loss_rpn_bbox: 0.0052  loss_cls: 0.0057  acc: 99.8047  loss_bbox: 0.0122
+2026/09/23 22:25:39 - mmengine - INFO - Epoch(train)  [5][200/492]  lr: 2.5000e-03  eta: 0:54:57  time: 0.9062  data_time: 0.6346  memory: 2855  loss: 0.0320  loss_rpn_cls: 0.0043  loss_rpn_bbox: 0.0104  loss_cls: 0.0050  acc: 99.8047  loss_bbox: 0.0123
+2026/09/23 22:26:22 - mmengine - INFO - Epoch(train)  [5][250/492]  lr: 2.5000e-03  eta: 0:54:12  time: 0.7499  data_time: 0.4827  memory: 2767  loss: 0.0359  loss_rpn_cls: 0.0050  loss_rpn_bbox: 0.0146  loss_cls: 0.0059  acc: 99.2188  loss_bbox: 0.0105
+2026/09/23 22:27:07 - mmengine - INFO - Epoch(train)  [5][300/492]  lr: 2.5000e-03  eta: 0:53:29  time: 0.9180  data_time: 0.6543  memory: 2583  loss: 0.0332  loss_rpn_cls: 0.0036  loss_rpn_bbox: 0.0152  loss_cls: 0.0047  acc: 99.6094  loss_bbox: 0.0095
+2026/09/23 22:27:52 - mmengine - INFO - Epoch(train)  [5][350/492]  lr: 2.5000e-03  eta: 0:52:46  time: 0.9056  data_time: 0.6251  memory: 2855  loss: 0.0386  loss_rpn_cls: 0.0042  loss_rpn_bbox: 0.0165  loss_cls: 0.0066  acc: 99.6094  loss_bbox: 0.0113
+2026/09/23 22:28:35 - mmengine - INFO - Epoch(train)  [5][400/492]  lr: 2.5000e-03  eta: 0:52:00  time: 0.7592  data_time: 0.5003  memory: 2582  loss: 0.0278  loss_rpn_cls: 0.0033  loss_rpn_bbox: 0.0057  loss_cls: 0.0073  acc: 100.0000  loss_bbox: 0.0115
+2026/09/23 22:29:20 - mmengine - INFO - Epoch(train)  [5][450/492]  lr: 2.5000e-03  eta: 0:51:17  time: 0.9084  data_time: 0.6434  memory: 2582  loss: 0.0360  loss_rpn_cls: 0.0030  loss_rpn_bbox: 0.0177  loss_cls: 0.0059  acc: 99.6094  loss_bbox: 0.0095
+2026/09/23 22:29:57 - mmengine - INFO - Exp name: cbis_faster_rcnn_20260923_214600
+2026/09/23 22:29:57 - mmengine - INFO - Saving checkpoint at 5 epochs
+2026/09/23 22:30:20 - mmengine - INFO - Epoch(val)  [5][ 50/247]    eta: 0:01:26  time: 0.4255  data_time: 0.3696  memory: 2582  
+2026/09/23 22:30:43 - mmengine - INFO - Epoch(val)  [5][100/247]    eta: 0:01:05  time: 0.4759  data_time: 0.4071  memory: 617  
+2026/09/23 22:31:04 - mmengine - INFO - Epoch(val)  [5][150/247]    eta: 0:00:42  time: 0.4168  data_time: 0.3622  memory: 623  
+2026/09/23 22:31:27 - mmengine - INFO - Epoch(val)  [5][200/247]    eta: 0:00:20  time: 0.3931  data_time: 0.3265  memory: 623  
+2026/09/23 22:31:48 - mmengine - INFO - Evaluating bbox...
+2026/09/23 22:31:48 - mmengine - INFO - bbox_mAP_copypaste: 0.941 0.941 0.941 -1.000 -1.000 0.941
+2026/09/23 22:31:48 - mmengine - INFO - Epoch(val) [5][247/247]    coco/bbox_mAP: 0.9410  coco/bbox_mAP_50: 0.9410  coco/bbox_mAP_75: 0.9410  coco/bbox_mAP_s: -1.0000  coco/bbox_mAP_m: -1.0000  coco/bbox_mAP_l: 0.9410  data_time: 0.3806  time: 0.4440
+2026/09/23 22:32:32 - mmengine - INFO - Epoch(train)  [6][ 50/492]  lr: 2.5000e-03  eta: 0:49:55  time: 0.8828  data_time: 0.6091  memory: 2582  loss: 0.0254  loss_rpn_cls: 0.0033  loss_rpn_bbox: 0.0076  loss_cls: 0.0062  acc: 99.6094  loss_bbox: 0.0082
+2026/09/23 22:33:16 - mmengine - INFO - Epoch(train)  [6][100/492]  lr: 2.5000e-03  eta: 0:49:10  time: 0.8530  data_time: 0.5879  memory: 2767  loss: 0.0396  loss_rpn_cls: 0.0034  loss_rpn_bbox: 0.0207  loss_cls: 0.0050  acc: 99.8047  loss_bbox: 0.0105
+2026/09/23 22:33:58 - mmengine - INFO - Epoch(train)  [6][150/492]  lr: 2.5000e-03  eta: 0:48:24  time: 0.8792  data_time: 0.6239  memory: 2582  loss: 0.0336  loss_rpn_cls: 0.0035  loss_rpn_bbox: 0.0154  loss_cls: 0.0052  acc: 99.8047  loss_bbox: 0.0095
+2026/09/23 22:34:42 - mmengine - INFO - Epoch(train)  [6][200/492]  lr: 2.5000e-03  eta: 0:47:40  time: 0.8929  data_time: 0.6125  memory: 2583  loss: 0.0338  loss_rpn_cls: 0.0041  loss_rpn_bbox: 0.0127  loss_cls: 0.0068  acc: 99.9023  loss_bbox: 0.0102
+2026/09/23 22:35:25 - mmengine - INFO - Epoch(train)  [6][250/492]  lr: 2.5000e-03  eta: 0:46:55  time: 0.8726  data_time: 0.6039  memory: 2674  loss: 0.0280  loss_rpn_cls: 0.0028  loss_rpn_bbox: 0.0080  loss_cls: 0.0055  acc: 99.6094  loss_bbox: 0.0117
+2026/09/23 22:36:07 - mmengine - INFO - Epoch(train)  [6][300/492]  lr: 2.5000e-03  eta: 0:46:08  time: 0.8254  data_time: 0.5603  memory: 2855  loss: 0.0291  loss_rpn_cls: 0.0037  loss_rpn_bbox: 0.0100  loss_cls: 0.0058  acc: 99.7070  loss_bbox: 0.0096
+2026/09/23 22:36:49 - mmengine - INFO - Epoch(train)  [6][350/492]  lr: 2.5000e-03  eta: 0:45:22  time: 0.8338  data_time: 0.5720  memory: 2583  loss: 0.0359  loss_rpn_cls: 0.0036  loss_rpn_bbox: 0.0197  loss_cls: 0.0052  acc: 99.8047  loss_bbox: 0.0074
+2026/09/23 22:37:33 - mmengine - INFO - Epoch(train)  [6][400/492]  lr: 2.5000e-03  eta: 0:44:38  time: 0.8630  data_time: 0.6084  memory: 2583  loss: 0.0263  loss_rpn_cls: 0.0027  loss_rpn_bbox: 0.0087  loss_cls: 0.0057  acc: 99.5117  loss_bbox: 0.0091
+2026/09/23 22:38:15 - mmengine - INFO - Epoch(train)  [6][450/492]  lr: 2.5000e-03  eta: 0:43:52  time: 0.9160  data_time: 0.6270  memory: 2855  loss: 0.0231  loss_rpn_cls: 0.0044  loss_rpn_bbox: 0.0072  loss_cls: 0.0044  acc: 99.9023  loss_bbox: 0.0070
+2026/09/23 22:38:51 - mmengine - INFO - Exp name: cbis_faster_rcnn_20260923_214600
+2026/09/23 22:38:51 - mmengine - INFO - Saving checkpoint at 6 epochs
+2026/09/23 22:39:14 - mmengine - INFO - Epoch(val)  [6][ 50/247]    eta: 0:01:25  time: 0.4318  data_time: 0.3409  memory: 2583  
+2026/09/23 22:39:36 - mmengine - INFO - Epoch(val)  [6][100/247]    eta: 0:01:05  time: 0.4738  data_time: 0.3776  memory: 617  
+2026/09/23 22:39:57 - mmengine - INFO - Epoch(val)  [6][150/247]    eta: 0:00:42  time: 0.4247  data_time: 0.3408  memory: 623  
+2026/09/23 22:40:20 - mmengine - INFO - Epoch(val)  [6][200/247]    eta: 0:00:20  time: 0.4047  data_time: 0.3203  memory: 623  
+2026/09/23 22:40:41 - mmengine - INFO - Evaluating bbox...
+2026/09/23 22:40:41 - mmengine - INFO - bbox_mAP_copypaste: 0.940 0.941 0.941 -1.000 -1.000 0.940
+2026/09/23 22:40:41 - mmengine - INFO - Epoch(val) [6][247/247]    coco/bbox_mAP: 0.9400  coco/bbox_mAP_50: 0.9410  coco/bbox_mAP_75: 0.9410  coco/bbox_mAP_s: -1.0000  coco/bbox_mAP_m: -1.0000  coco/bbox_mAP_l: 0.9400  data_time: 0.3520  time: 0.4411
+2026/09/23 22:41:23 - mmengine - INFO - Exp name: cbis_faster_rcnn_20260923_214600
+2026/09/23 22:41:25 - mmengine - INFO - Epoch(train)  [7][ 50/492]  lr: 2.5000e-03  eta: 0:42:30  time: 0.8141  data_time: 0.5457  memory: 2855  loss: 0.0276  loss_rpn_cls: 0.0033  loss_rpn_bbox: 0.0086  loss_cls: 0.0058  acc: 99.7070  loss_bbox: 0.0099
+2026/09/23 22:42:07 - mmengine - INFO - Epoch(train)  [7][100/492]  lr: 2.5000e-03  eta: 0:41:44  time: 0.8637  data_time: 0.5950  memory: 2674  loss: 0.0203  loss_rpn_cls: 0.0031  loss_rpn_bbox: 0.0051  loss_cls: 0.0041  acc: 99.9023  loss_bbox: 0.0080
+2026/09/23 22:42:48 - mmengine - INFO - Epoch(train)  [7][150/492]  lr: 2.5000e-03  eta: 0:40:58  time: 0.8938  data_time: 0.6221  memory: 2674  loss: 0.0242  loss_rpn_cls: 0.0025  loss_rpn_bbox: 0.0072  loss_cls: 0.0048  acc: 100.0000  loss_bbox: 0.0097
+2026/09/23 22:43:31 - mmengine - INFO - Epoch(train)  [7][200/492]  lr: 2.5000e-03  eta: 0:40:13  time: 0.8247  data_time: 0.5589  memory: 2583  loss: 0.0213  loss_rpn_cls: 0.0018  loss_rpn_bbox: 0.0080  loss_cls: 0.0042  acc: 99.9023  loss_bbox: 0.0073
+2026/09/23 22:44:12 - mmengine - INFO - Epoch(train)  [7][250/492]  lr: 2.5000e-03  eta: 0:39:27  time: 0.8852  data_time: 0.6091  memory: 2583  loss: 0.0353  loss_rpn_cls: 0.0050  loss_rpn_bbox: 0.0105  loss_cls: 0.0065  acc: 99.6094  loss_bbox: 0.0133
+2026/09/23 22:44:58 - mmengine - INFO - Epoch(train)  [7][300/492]  lr: 2.5000e-03  eta: 0:38:44  time: 0.9023  data_time: 0.6275  memory: 2582  loss: 0.0315  loss_rpn_cls: 0.0044  loss_rpn_bbox: 0.0137  loss_cls: 0.0049  acc: 99.9023  loss_bbox: 0.0085
+2026/09/23 22:45:39 - mmengine - INFO - Epoch(train)  [7][350/492]  lr: 2.5000e-03  eta: 0:37:59  time: 0.8788  data_time: 0.6117  memory: 2489  loss: 0.0288  loss_rpn_cls: 0.0037  loss_rpn_bbox: 0.0118  loss_cls: 0.0052  acc: 99.4141  loss_bbox: 0.0081
+2026/09/23 22:46:23 - mmengine - INFO - Epoch(train)  [7][400/492]  lr: 2.5000e-03  eta: 0:37:15  time: 0.8815  data_time: 0.6088  memory: 2582  loss: 0.0327  loss_rpn_cls: 0.0018  loss_rpn_bbox: 0.0171  loss_cls: 0.0043  acc: 100.0000  loss_bbox: 0.0095
+2026/09/23 22:47:09 - mmengine - INFO - Epoch(train)  [7][450/492]  lr: 2.5000e-03  eta: 0:36:33  time: 0.8504  data_time: 0.5517  memory: 2767  loss: 0.0283  loss_rpn_cls: 0.0026  loss_rpn_bbox: 0.0052  loss_cls: 0.0097  acc: 99.7070  loss_bbox: 0.0108
+2026/09/23 22:47:44 - mmengine - INFO - Exp name: cbis_faster_rcnn_20260923_214600
+2026/09/23 22:47:44 - mmengine - INFO - Saving checkpoint at 7 epochs
+2026/09/23 22:48:07 - mmengine - INFO - Epoch(val)  [7][ 50/247]    eta: 0:01:25  time: 0.4277  data_time: 0.3509  memory: 2855  
+2026/09/23 22:48:30 - mmengine - INFO - Epoch(val)  [7][100/247]    eta: 0:01:05  time: 0.4706  data_time: 0.3786  memory: 617  
+2026/09/23 22:48:51 - mmengine - INFO - Epoch(val)  [7][150/247]    eta: 0:00:42  time: 0.4196  data_time: 0.3377  memory: 623  
+2026/09/23 22:49:13 - mmengine - INFO - Epoch(val)  [7][200/247]    eta: 0:00:20  time: 0.3992  data_time: 0.3177  memory: 623  
+2026/09/23 22:49:34 - mmengine - INFO - Evaluating bbox...
+2026/09/23 22:49:34 - mmengine - INFO - bbox_mAP_copypaste: 0.940 0.941 0.941 -1.000 -1.000 0.940
+2026/09/23 22:49:34 - mmengine - INFO - Epoch(val) [7][247/247]    coco/bbox_mAP: 0.9400  coco/bbox_mAP_50: 0.9410  coco/bbox_mAP_75: 0.9410  coco/bbox_mAP_s: -1.0000  coco/bbox_mAP_m: -1.0000  coco/bbox_mAP_l: 0.9400  data_time: 0.3563  time: 0.4407
+2026/09/23 22:50:17 - mmengine - INFO - Epoch(train)  [8][ 50/492]  lr: 2.5000e-03  eta: 0:35:10  time: 0.8345  data_time: 0.5648  memory: 2582  loss: 0.0235  loss_rpn_cls: 0.0021  loss_rpn_bbox: 0.0095  loss_cls: 0.0038  acc: 99.9023  loss_bbox: 0.0080
+2026/09/23 22:50:58 - mmengine - INFO - Epoch(train)  [8][100/492]  lr: 2.5000e-03  eta: 0:34:25  time: 0.8650  data_time: 0.5786  memory: 2674  loss: 0.0202  loss_rpn_cls: 0.0016  loss_rpn_bbox: 0.0066  loss_cls: 0.0045  acc: 99.9023  loss_bbox: 0.0075
+2026/09/23 22:51:38 - mmengine - INFO - Epoch(train)  [8][150/492]  lr: 2.5000e-03  eta: 0:33:38  time: 0.7796  data_time: 0.4992  memory: 2674  loss: 0.0147  loss_rpn_cls: 0.0014  loss_rpn_bbox: 0.0027  loss_cls: 0.0040  acc: 100.0000  loss_bbox: 0.0067
+2026/09/23 22:52:22 - mmengine - INFO - Epoch(train)  [8][200/492]  lr: 2.5000e-03  eta: 0:32:55  time: 0.8998  data_time: 0.6178  memory: 2583  loss: 0.0259  loss_rpn_cls: 0.0040  loss_rpn_bbox: 0.0105  loss_cls: 0.0039  acc: 100.0000  loss_bbox: 0.0075
+2026/09/23 22:53:08 - mmengine - INFO - Epoch(train)  [8][250/492]  lr: 2.5000e-03  eta: 0:32:12  time: 0.9723  data_time: 0.6853  memory: 2855  loss: 0.0276  loss_rpn_cls: 0.0022  loss_rpn_bbox: 0.0129  loss_cls: 0.0055  acc: 99.6094  loss_bbox: 0.0071
+2026/09/23 22:53:53 - mmengine - INFO - Epoch(train)  [8][300/492]  lr: 2.5000e-03  eta: 0:31:30  time: 0.8863  data_time: 0.6003  memory: 2767  loss: 0.0265  loss_rpn_cls: 0.0024  loss_rpn_bbox: 0.0103  loss_cls: 0.0040  acc: 99.8047  loss_bbox: 0.0098
+2026/09/23 22:54:38 - mmengine - INFO - Epoch(train)  [8][350/492]  lr: 2.5000e-03  eta: 0:30:46  time: 0.9432  data_time: 0.6673  memory: 2855  loss: 0.0248  loss_rpn_cls: 0.0019  loss_rpn_bbox: 0.0104  loss_cls: 0.0048  acc: 99.9023  loss_bbox: 0.0078
+2026/09/23 22:55:22 - mmengine - INFO - Epoch(train)  [8][400/492]  lr: 2.5000e-03  eta: 0:30:03  time: 0.9092  data_time: 0.6549  memory: 2582  loss: 0.0301  loss_rpn_cls: 0.0029  loss_rpn_bbox: 0.0174  loss_cls: 0.0031  acc: 99.9023  loss_bbox: 0.0067
+2026/09/23 22:56:07 - mmengine - INFO - Epoch(train)  [8][450/492]  lr: 2.5000e-03  eta: 0:29:20  time: 0.9584  data_time: 0.6826  memory: 2582  loss: 0.0357  loss_rpn_cls: 0.0025  loss_rpn_bbox: 0.0206  loss_cls: 0.0043  acc: 99.7070  loss_bbox: 0.0083
+2026/09/23 22:56:44 - mmengine - INFO - Exp name: cbis_faster_rcnn_20260923_214600
+2026/09/23 22:56:44 - mmengine - INFO - Saving checkpoint at 8 epochs
+2026/09/23 22:57:08 - mmengine - INFO - Epoch(val)  [8][ 50/247]    eta: 0:01:28  time: 0.4356  data_time: 0.3698  memory: 2489  
+2026/09/23 22:57:31 - mmengine - INFO - Epoch(val)  [8][100/247]    eta: 0:01:06  time: 0.4835  data_time: 0.4094  memory: 617  
+2026/09/23 22:57:52 - mmengine - INFO - Epoch(val)  [8][150/247]    eta: 0:00:43  time: 0.4357  data_time: 0.3738  memory: 623  
+2026/09/23 22:58:15 - mmengine - INFO - Epoch(val)  [8][200/247]    eta: 0:00:21  time: 0.3989  data_time: 0.3319  memory: 623  
+2026/09/23 22:58:37 - mmengine - INFO - Evaluating bbox...
+2026/09/23 22:58:37 - mmengine - INFO - bbox_mAP_copypaste: 0.941 0.941 0.941 -1.000 -1.000 0.941
+2026/09/23 22:58:37 - mmengine - INFO - Epoch(val) [8][247/247]    coco/bbox_mAP: 0.9410  coco/bbox_mAP_50: 0.9410  coco/bbox_mAP_75: 0.9410  coco/bbox_mAP_s: -1.0000  coco/bbox_mAP_m: -1.0000  coco/bbox_mAP_l: 0.9410  data_time: 0.3880  time: 0.4523
+2026/09/23 22:59:21 - mmengine - INFO - Epoch(train)  [9][ 50/492]  lr: 2.5000e-04  eta: 0:27:59  time: 0.8961  data_time: 0.6261  memory: 2489  loss: 0.0198  loss_rpn_cls: 0.0020  loss_rpn_bbox: 0.0088  loss_cls: 0.0036  acc: 99.9023  loss_bbox: 0.0054
+2026/09/23 22:59:34 - mmengine - INFO - Exp name: cbis_faster_rcnn_20260923_214600
+2026/09/23 23:00:05 - mmengine - INFO - Epoch(train)  [9][100/492]  lr: 2.5000e-04  eta: 0:27:15  time: 0.7994  data_time: 0.5231  memory: 2582  loss: 0.0255  loss_rpn_cls: 0.0032  loss_rpn_bbox: 0.0126  loss_cls: 0.0046  acc: 99.9023  loss_bbox: 0.0052
+2026/09/23 23:00:49 - mmengine - INFO - Epoch(train)  [9][150/492]  lr: 2.5000e-04  eta: 0:26:32  time: 0.8445  data_time: 0.5807  memory: 2767  loss: 0.0175  loss_rpn_cls: 0.0024  loss_rpn_bbox: 0.0081  loss_cls: 0.0023  acc: 100.0000  loss_bbox: 0.0046
+2026/09/23 23:01:31 - mmengine - INFO - Epoch(train)  [9][200/492]  lr: 2.5000e-04  eta: 0:25:47  time: 0.8615  data_time: 0.5789  memory: 2674  loss: 0.0182  loss_rpn_cls: 0.0024  loss_rpn_bbox: 0.0063  loss_cls: 0.0039  acc: 99.5117  loss_bbox: 0.0055
+2026/09/23 23:02:16 - mmengine - INFO - Epoch(train)  [9][250/492]  lr: 2.5000e-04  eta: 0:25:04  time: 0.8613  data_time: 0.5919  memory: 2582  loss: 0.0180  loss_rpn_cls: 0.0024  loss_rpn_bbox: 0.0085  loss_cls: 0.0026  acc: 100.0000  loss_bbox: 0.0045
+2026/09/23 23:03:00 - mmengine - INFO - Epoch(train)  [9][300/492]  lr: 2.5000e-04  eta: 0:24:20  time: 0.8776  data_time: 0.6097  memory: 2582  loss: 0.0249  loss_rpn_cls: 0.0038  loss_rpn_bbox: 0.0130  loss_cls: 0.0038  acc: 99.8047  loss_bbox: 0.0043
+2026/09/23 23:03:45 - mmengine - INFO - Epoch(train)  [9][350/492]  lr: 2.5000e-04  eta: 0:23:37  time: 0.8759  data_time: 0.5941  memory: 2855  loss: 0.0119  loss_rpn_cls: 0.0019  loss_rpn_bbox: 0.0021  loss_cls: 0.0029  acc: 99.9023  loss_bbox: 0.0051
+2026/09/23 23:04:26 - mmengine - INFO - Epoch(train)  [9][400/492]  lr: 2.5000e-04  eta: 0:22:52  time: 0.8774  data_time: 0.6014  memory: 2582  loss: 0.0178  loss_rpn_cls: 0.0024  loss_rpn_bbox: 0.0075  loss_cls: 0.0031  acc: 100.0000  loss_bbox: 0.0048
+2026/09/23 23:05:08 - mmengine - INFO - Epoch(train)  [9][450/492]  lr: 2.5000e-04  eta: 0:22:08  time: 0.7999  data_time: 0.5303  memory: 2582  loss: 0.0123  loss_rpn_cls: 0.0016  loss_rpn_bbox: 0.0040  loss_cls: 0.0021  acc: 100.0000  loss_bbox: 0.0046
+2026/09/23 23:05:43 - mmengine - INFO - Exp name: cbis_faster_rcnn_20260923_214600
+2026/09/23 23:05:43 - mmengine - INFO - Saving checkpoint at 9 epochs
+2026/09/23 23:06:06 - mmengine - INFO - Epoch(val)  [9][ 50/247]    eta: 0:01:25  time: 0.4226  data_time: 0.3669  memory: 2674  
+2026/09/23 23:06:28 - mmengine - INFO - Epoch(val)  [9][100/247]    eta: 0:01:04  time: 0.4746  data_time: 0.4017  memory: 617  
+2026/09/23 23:06:49 - mmengine - INFO - Epoch(val)  [9][150/247]    eta: 0:00:42  time: 0.4173  data_time: 0.3646  memory: 623  
+2026/09/23 23:07:12 - mmengine - INFO - Epoch(val)  [9][200/247]    eta: 0:00:20  time: 0.3899  data_time: 0.3249  memory: 623  
+2026/09/23 23:07:33 - mmengine - INFO - Evaluating bbox...
+2026/09/23 23:07:33 - mmengine - INFO - bbox_mAP_copypaste: 0.941 0.941 0.941 -1.000 -1.000 0.941
+2026/09/23 23:07:33 - mmengine - INFO - Epoch(val) [9][247/247]    coco/bbox_mAP: 0.9410  coco/bbox_mAP_50: 0.9410  coco/bbox_mAP_75: 0.9410  coco/bbox_mAP_s: -1.0000  coco/bbox_mAP_m: -1.0000  coco/bbox_mAP_l: 0.9410  data_time: 0.3790  time: 0.4417
+2026/09/23 23:08:16 - mmengine - INFO - Epoch(train) [10][ 50/492]  lr: 2.5000e-04  eta: 0:20:46  time: 0.8169  data_time: 0.5462  memory: 2489  loss: 0.0237  loss_rpn_cls: 0.0038  loss_rpn_bbox: 0.0126  loss_cls: 0.0028  acc: 99.9023  loss_bbox: 0.0045
+2026/09/23 23:08:59 - mmengine - INFO - Epoch(train) [10][100/492]  lr: 2.5000e-04  eta: 0:20:02  time: 0.9069  data_time: 0.6180  memory: 2855  loss: 0.0170  loss_rpn_cls: 0.0011  loss_rpn_bbox: 0.0062  loss_cls: 0.0035  acc: 99.8047  loss_bbox: 0.0062
+2026/09/23 23:09:43 - mmengine - INFO - Epoch(train) [10][150/492]  lr: 2.5000e-04  eta: 0:19:19  time: 0.7674  data_time: 0.4939  memory: 2582  loss: 0.0152  loss_rpn_cls: 0.0029  loss_rpn_bbox: 0.0051  loss_cls: 0.0026  acc: 99.9023  loss_bbox: 0.0046
+2026/09/23 23:10:25 - mmengine - INFO - Epoch(train) [10][200/492]  lr: 2.5000e-04  eta: 0:18:35  time: 0.8245  data_time: 0.5520  memory: 2673  loss: 0.0186  loss_rpn_cls: 0.0032  loss_rpn_bbox: 0.0068  loss_cls: 0.0037  acc: 99.9023  loss_bbox: 0.0049
+2026/09/23 23:11:09 - mmengine - INFO - Epoch(train) [10][250/492]  lr: 2.5000e-04  eta: 0:17:51  time: 0.8389  data_time: 0.5764  memory: 2674  loss: 0.0165  loss_rpn_cls: 0.0018  loss_rpn_bbox: 0.0070  loss_cls: 0.0025  acc: 100.0000  loss_bbox: 0.0051
+2026/09/23 23:11:52 - mmengine - INFO - Epoch(train) [10][300/492]  lr: 2.5000e-04  eta: 0:17:07  time: 0.8715  data_time: 0.5876  memory: 2489  loss: 0.0170  loss_rpn_cls: 0.0007  loss_rpn_bbox: 0.0075  loss_cls: 0.0032  acc: 100.0000  loss_bbox: 0.0055
+2026/09/23 23:12:35 - mmengine - INFO - Epoch(train) [10][350/492]  lr: 2.5000e-04  eta: 0:16:23  time: 0.8186  data_time: 0.5450  memory: 2583  loss: 0.0148  loss_rpn_cls: 0.0028  loss_rpn_bbox: 0.0049  loss_cls: 0.0026  acc: 99.9023  loss_bbox: 0.0045
+2026/09/23 23:13:17 - mmengine - INFO - Epoch(train) [10][400/492]  lr: 2.5000e-04  eta: 0:15:39  time: 0.8003  data_time: 0.5358  memory: 2582  loss: 0.0289  loss_rpn_cls: 0.0011  loss_rpn_bbox: 0.0204  loss_cls: 0.0031  acc: 99.9023  loss_bbox: 0.0043
+2026/09/23 23:13:58 - mmengine - INFO - Epoch(train) [10][450/492]  lr: 2.5000e-04  eta: 0:14:55  time: 0.7890  data_time: 0.5204  memory: 2855  loss: 0.0156  loss_rpn_cls: 0.0016  loss_rpn_bbox: 0.0055  loss_cls: 0.0034  acc: 99.8047  loss_bbox: 0.0051
+2026/09/23 23:14:36 - mmengine - INFO - Exp name: cbis_faster_rcnn_20260923_214600
+2026/09/23 23:14:36 - mmengine - INFO - Saving checkpoint at 10 epochs
+2026/09/23 23:14:58 - mmengine - INFO - Epoch(val) [10][ 50/247]    eta: 0:01:25  time: 0.4273  data_time: 0.3383  memory: 2583  
+2026/09/23 23:15:21 - mmengine - INFO - Epoch(val) [10][100/247]    eta: 0:01:04  time: 0.4737  data_time: 0.3820  memory: 617  
+2026/09/23 23:15:42 - mmengine - INFO - Epoch(val) [10][150/247]    eta: 0:00:42  time: 0.4251  data_time: 0.3350  memory: 623  
+2026/09/23 23:16:04 - mmengine - INFO - Epoch(val) [10][200/247]    eta: 0:00:20  time: 0.4007  data_time: 0.3184  memory: 623  
+2026/09/23 23:16:26 - mmengine - INFO - Evaluating bbox...
+2026/09/23 23:16:26 - mmengine - INFO - bbox_mAP_copypaste: 0.941 0.941 0.941 -1.000 -1.000 0.941
+2026/09/23 23:16:26 - mmengine - INFO - Epoch(val) [10][247/247]    coco/bbox_mAP: 0.9410  coco/bbox_mAP_50: 0.9410  coco/bbox_mAP_75: 0.9410  coco/bbox_mAP_s: -1.0000  coco/bbox_mAP_m: -1.0000  coco/bbox_mAP_l: 0.9410  data_time: 0.3494  time: 0.4411
+2026/09/23 23:17:09 - mmengine - INFO - Epoch(train) [11][ 50/492]  lr: 2.5000e-04  eta: 0:13:35  time: 0.8568  data_time: 0.5830  memory: 2673  loss: 0.0208  loss_rpn_cls: 0.0033  loss_rpn_bbox: 0.0076  loss_cls: 0.0047  acc: 99.7070  loss_bbox: 0.0052
+2026/09/23 23:17:34 - mmengine - INFO - Exp name: cbis_faster_rcnn_20260923_214600
+2026/09/23 23:17:51 - mmengine - INFO - Epoch(train) [11][100/492]  lr: 2.5000e-04  eta: 0:12:51  time: 0.8874  data_time: 0.6098  memory: 2855  loss: 0.0252  loss_rpn_cls: 0.0018  loss_rpn_bbox: 0.0132  loss_cls: 0.0040  acc: 99.6094  loss_bbox: 0.0061
+2026/09/23 23:18:35 - mmengine - INFO - Epoch(train) [11][150/492]  lr: 2.5000e-04  eta: 0:12:07  time: 0.9653  data_time: 0.6862  memory: 2582  loss: 0.0131  loss_rpn_cls: 0.0018  loss_rpn_bbox: 0.0023  loss_cls: 0.0037  acc: 100.0000  loss_bbox: 0.0053
+2026/09/23 23:19:18 - mmengine - INFO - Epoch(train) [11][200/492]  lr: 2.5000e-04  eta: 0:11:24  time: 0.8643  data_time: 0.6046  memory: 2582  loss: 0.0209  loss_rpn_cls: 0.0040  loss_rpn_bbox: 0.0074  loss_cls: 0.0048  acc: 100.0000  loss_bbox: 0.0047
+2026/09/23 23:20:01 - mmengine - INFO - Epoch(train) [11][250/492]  lr: 2.5000e-04  eta: 0:10:40  time: 0.8611  data_time: 0.5855  memory: 2855  loss: 0.0164  loss_rpn_cls: 0.0018  loss_rpn_bbox: 0.0069  loss_cls: 0.0033  acc: 99.7070  loss_bbox: 0.0045
+2026/09/23 23:20:44 - mmengine - INFO - Epoch(train) [11][300/492]  lr: 2.5000e-04  eta: 0:09:56  time: 0.8496  data_time: 0.5732  memory: 2582  loss: 0.0162  loss_rpn_cls: 0.0015  loss_rpn_bbox: 0.0065  loss_cls: 0.0032  acc: 99.6094  loss_bbox: 0.0050
+2026/09/23 23:21:27 - mmengine - INFO - Epoch(train) [11][350/492]  lr: 2.5000e-04  eta: 0:09:12  time: 0.8850  data_time: 0.6109  memory: 2767  loss: 0.0129  loss_rpn_cls: 0.0012  loss_rpn_bbox: 0.0043  loss_cls: 0.0024  acc: 99.9023  loss_bbox: 0.0051
+2026/09/23 23:22:10 - mmengine - INFO - Epoch(train) [11][400/492]  lr: 2.5000e-04  eta: 0:08:29  time: 0.8219  data_time: 0.5553  memory: 2582  loss: 0.0141  loss_rpn_cls: 0.0008  loss_rpn_bbox: 0.0042  loss_cls: 0.0040  acc: 99.9023  loss_bbox: 0.0052
+2026/09/23 23:22:53 - mmengine - INFO - Epoch(train) [11][450/492]  lr: 2.5000e-04  eta: 0:07:45  time: 0.7768  data_time: 0.5145  memory: 2674  loss: 0.0185  loss_rpn_cls: 0.0012  loss_rpn_bbox: 0.0073  loss_cls: 0.0043  acc: 99.8047  loss_bbox: 0.0057
+2026/09/23 23:23:28 - mmengine - INFO - Exp name: cbis_faster_rcnn_20260923_214600
+2026/09/23 23:23:28 - mmengine - INFO - Saving checkpoint at 11 epochs
+2026/09/23 23:23:51 - mmengine - INFO - Epoch(val) [11][ 50/247]    eta: 0:01:25  time: 0.4231  data_time: 0.3690  memory: 2489  
+2026/09/23 23:24:14 - mmengine - INFO - Epoch(val) [11][100/247]    eta: 0:01:05  time: 0.4661  data_time: 0.4104  memory: 617  
+2026/09/23 23:24:35 - mmengine - INFO - Epoch(val) [11][150/247]    eta: 0:00:42  time: 0.4216  data_time: 0.3686  memory: 623  
+2026/09/23 23:24:57 - mmengine - INFO - Epoch(val) [11][200/247]    eta: 0:00:20  time: 0.3963  data_time: 0.3409  memory: 623  
+2026/09/23 23:25:19 - mmengine - INFO - Evaluating bbox...
+2026/09/23 23:25:19 - mmengine - INFO - bbox_mAP_copypaste: 0.941 0.941 0.941 -1.000 -1.000 0.941
+2026/09/23 23:25:19 - mmengine - INFO - Epoch(val) [11][247/247]    coco/bbox_mAP: 0.9410  coco/bbox_mAP_50: 0.9410  coco/bbox_mAP_75: 0.9410  coco/bbox_mAP_s: -1.0000  coco/bbox_mAP_m: -1.0000  coco/bbox_mAP_l: 0.9410  data_time: 0.3832  time: 0.4440
+2026/09/23 23:26:00 - mmengine - INFO - Epoch(train) [12][ 50/492]  lr: 2.5000e-05  eta: 0:06:25  time: 0.7534  data_time: 0.4832  memory: 2674  loss: 0.0220  loss_rpn_cls: 0.0019  loss_rpn_bbox: 0.0114  loss_cls: 0.0037  acc: 99.9023  loss_bbox: 0.0050
+2026/09/23 23:26:45 - mmengine - INFO - Epoch(train) [12][100/492]  lr: 2.5000e-05  eta: 0:05:41  time: 0.8805  data_time: 0.6088  memory: 2767  loss: 0.0145  loss_rpn_cls: 0.0010  loss_rpn_bbox: 0.0038  loss_cls: 0.0042  acc: 99.9023  loss_bbox: 0.0055
+2026/09/23 23:27:31 - mmengine - INFO - Epoch(train) [12][150/492]  lr: 2.5000e-05  eta: 0:04:58  time: 0.8434  data_time: 0.5772  memory: 2582  loss: 0.0280  loss_rpn_cls: 0.0010  loss_rpn_bbox: 0.0147  loss_cls: 0.0056  acc: 99.9023  loss_bbox: 0.0067
+2026/09/23 23:28:15 - mmengine - INFO - Epoch(train) [12][200/492]  lr: 2.5000e-05  eta: 0:04:14  time: 0.8989  data_time: 0.6287  memory: 2582  loss: 0.0162  loss_rpn_cls: 0.0023  loss_rpn_bbox: 0.0042  loss_cls: 0.0048  acc: 100.0000  loss_bbox: 0.0050
+2026/09/23 23:28:58 - mmengine - INFO - Epoch(train) [12][250/492]  lr: 2.5000e-05  eta: 0:03:30  time: 0.8843  data_time: 0.5974  memory: 2489  loss: 0.0144  loss_rpn_cls: 0.0009  loss_rpn_bbox: 0.0045  loss_cls: 0.0043  acc: 99.8047  loss_bbox: 0.0047
+2026/09/23 23:29:40 - mmengine - INFO - Epoch(train) [12][300/492]  lr: 2.5000e-05  eta: 0:02:47  time: 0.8819  data_time: 0.6109  memory: 2855  loss: 0.0145  loss_rpn_cls: 0.0019  loss_rpn_bbox: 0.0054  loss_cls: 0.0027  acc: 100.0000  loss_bbox: 0.0044
+2026/09/23 23:30:21 - mmengine - INFO - Epoch(train) [12][350/492]  lr: 2.5000e-05  eta: 0:02:03  time: 0.8575  data_time: 0.5859  memory: 2583  loss: 0.0233  loss_rpn_cls: 0.0027  loss_rpn_bbox: 0.0094  loss_cls: 0.0059  acc: 99.7070  loss_bbox: 0.0053
+2026/09/23 23:31:06 - mmengine - INFO - Epoch(train) [12][400/492]  lr: 2.5000e-05  eta: 0:01:20  time: 0.8953  data_time: 0.6277  memory: 2855  loss: 0.0156  loss_rpn_cls: 0.0008  loss_rpn_bbox: 0.0076  loss_cls: 0.0029  acc: 99.9023  loss_bbox: 0.0043
+2026/09/23 23:31:49 - mmengine - INFO - Epoch(train) [12][450/492]  lr: 2.5000e-05  eta: 0:00:36  time: 0.9186  data_time: 0.6377  memory: 2582  loss: 0.0234  loss_rpn_cls: 0.0017  loss_rpn_bbox: 0.0133  loss_cls: 0.0036  acc: 100.0000  loss_bbox: 0.0048
+2026/09/23 23:32:25 - mmengine - INFO - Exp name: cbis_faster_rcnn_20260923_214600
+2026/09/23 23:32:25 - mmengine - INFO - Saving checkpoint at 12 epochs
+2026/09/23 23:32:48 - mmengine - INFO - Epoch(val) [12][ 50/247]    eta: 0:01:26  time: 0.4303  data_time: 0.3392  memory: 2489  
+2026/09/23 23:33:10 - mmengine - INFO - Epoch(val) [12][100/247]    eta: 0:01:05  time: 0.4735  data_time: 0.3804  memory: 617  
+2026/09/23 23:33:32 - mmengine - INFO - Epoch(val) [12][150/247]    eta: 0:00:42  time: 0.4246  data_time: 0.3324  memory: 623  
+2026/09/23 23:33:54 - mmengine - INFO - Epoch(val) [12][200/247]    eta: 0:00:20  time: 0.4004  data_time: 0.3074  memory: 623  
+2026/09/23 23:34:15 - mmengine - INFO - Evaluating bbox...
+2026/09/23 23:34:15 - mmengine - INFO - bbox_mAP_copypaste: 0.941 0.941 0.941 -1.000 -1.000 0.941
+2026/09/23 23:34:15 - mmengine - INFO - Epoch(val) [12][247/247]    coco/bbox_mAP: 0.9410  coco/bbox_mAP_50: 0.9410  coco/bbox_mAP_75: 0.9410  coco/bbox_mAP_s: -1.0000  coco/bbox_mAP_m: -1.0000  coco/bbox_mAP_l: 0.9410  data_time: 0.3500  time: 0.4427

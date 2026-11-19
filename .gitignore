@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+
+# Dados: o CBIS-DDSM e o VinDr-Mammo NAO podem ser redistribuidos
+data/
+annotations/
+annotations_VinDR/
+annotations_VinDR_recorte/
+*.dcm
+*.dicom
+images/
+*.csv
+!resultados/**/*.csv
+
+# Saidas de treino e inferencia (pesos grandes, logs e imagens de exames)
+work_dirs/
+resultados_VinDR/
+resultados_ensemble/
+*.pth
+*.log
+!resultados/logs/**/*.log
+debug_*.png
+*_deteccao.png
+
+# Instaladores e arquivos locais
+*.whl
+_antigos/
+.vscode/
+.env
+ambiente_local.txt
+.impeccable/
+.DS_Store
