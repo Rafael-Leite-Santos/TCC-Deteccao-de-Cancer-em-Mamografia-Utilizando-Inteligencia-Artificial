@@ -141,3 +141,80 @@ O import do `VinDR_inference` pega `ImportError` e `SystemExit`, como pedido, e 
 `Exception`. Isso cobre erros comuns de versão do mmcv/mmdet, que costumam aparecer como
 `AssertionError`. Em qualquer desses casos o servidor sobe em modo demonstração e o
 motivo aparece no log e em `GET /status`.
+
+---
+
+## 6. Caminho das anotacoes no treino dentro do clone (registrado em 12/11)
+
+**O que era:** os configs do VinDr em `configs/` usam `data_root=IMAGES_ROOT` e
+`ann_file=ANNOTS_DIR + '/train.json'`, ambos relativos. O mmengine
+(`BaseDataset._join_prefix`) junta `data_root` + `ann_file` quando o `ann_file` nao e
+absoluto, e procura `data/VinDr-Mammo/images\annotations_VinDR/train.json`, que nao existe.
+Erro no primeiro treino no clone: `FileNotFoundError: [Errno 2] No such file or directory:
+'data/VinDr-Mammo/images\\annotations_VinDR/train.json'`. Nos treinos originais os caminhos
+eram absolutos (`C:/Users/rl-sa/Digital_Eye_DICOM/annotations_VinDR`, ver
+`work_dirs/VinDR_faster_rcnn_40ep_parada_map50/VinDR_faster_rcnn.py`) e o mmengine nao juntava.
+
+**O que mudou:** so em `configs/VinDR_faster_rcnn_rot.py`: `data_root=''` e
+`data_prefix=dict(img=IMAGES_ROOT)` nos 3 dataloaders. O caminho final das imagens e o mesmo
+(`IMAGES_ROOT/<file_name>`) e o `ann_file` passa a ser relativo a raiz do clone.
+
+**Status (12/11): resolvido em todos os configs**, a pedido do Rafael: a mesma troca foi
+aplicada em `VinDR_faster_rcnn.py`, `VinDR_faster_rcnn_200ep.py` (inclusive o dataloader do
+`ValLossHook`), `VinDR_faster_rcnn_recorte.py`, `VinDR_fcos.py`, `VinDR_atss.py`,
+`cbis_faster_rcnn.py` e `cbis_cascade_rcnn.py`. Modelo, pipeline, hiperparametros e `work_dir`
+nao mudaram. Os configs salvos dentro de `work_dirs/` (copias dos treinos antigos) nao foram
+tocados. Continua valendo: rodar sempre da raiz do clone (caminhos relativos).
+
+---
+
+## 7. Ensemble com o Faster R-CNN com aumento de dados (registrado em 18/11)
+
+**O que era:** `VinDR_ensemble.py` usava `configs/VinDR_faster_rcnn.py` (Faster sem aumento de dados).
+O cache `resultados_ensemble/deteccoes_<split>.json` nao registrava quais checkpoints o geraram: trocar um
+modelo sem `--refazer` misturaria, sem aviso, deteccoes do modelo antigo. Com `WORK_DIRS` definida,
+`pasta_do_modelo()` usava so o ultimo nome do `work_dir`, o que quebra para `work_dirs/sementes/r50aug_s2`.
+
+**O que mudou (pedido do Rafael):**
+- `MODELOS[0]` = `('Faster R-CNN', 'configs/sementes/r50aug_s2.py')` (pacote de aumento, semente 2,
+  ep. 25, escolhido pela validacao: 77,2%). FCOS e ATSS seguem os mesmos (sem aumento) por enquanto.
+- O cache passa a guardar `_checkpoints` (nome -> checkpoint). Se nao bater com os checkpoints atuais,
+  o script roda os modelos de novo, mesmo sem `--refazer`.
+- `pasta_do_modelo()` com `WORK_DIRS` mantem as subpastas abaixo de `work_dirs` (para os antigos,
+  igual a antes).
+- `reavaliar_iou.py` ignora a chave `_checkpoints` ao ler o cache.
+- Copia dos resultados antigos (ensemble sem aumento) em `resultados_ensemble_v1_sem_aumento/`.
+
+**Efeito:** a interface com `ENSEMBLE=1` (`main.py`, sem alteracao) passa a carregar o Faster com aumento.
+Os numeros antigos do ensemble (README, `resultados/`) continuam validos para a configuracao antiga.
+
+---
+
+## 8. Ensemble v3: FCOS e ATSS com aumento de dados (registrado em 19/11)
+
+**O que mudou (pedido do Rafael, etapa 2):** `MODELOS` do `VinDR_ensemble.py` passa a usar
+`configs/sementes/fcosaug_s0.py` (val mAP@0,50 79,3%, ep. 23) e `configs/sementes/atssaug_s0.py`
+(val 76,2%, ep. 23), escolhidos pela validacao entre 3 sementes. Faster segue `r50aug_s2`.
+Resultados do ensemble v2 copiados para `resultados_ensemble_v2_faster_aug/`. O cache e refeito
+automaticamente (registro de checkpoints, item 7).
+
+---
+
+## 9. Interface: ensemble v3 como padrao e seletor de modelo com metricas (registrado em 19/11)
+
+**Pedido do Rafael.** Arquivos alterados: `main.py` e `index.html`.
+
+**O que mudou:**
+- `main.py`: sem `CONFIG`/`CHECKPOINT`, o servidor sobe com o ensemble (`ENSEMBLE=0` forca o modelo
+  unico). `/status` ganha `opcoes` (ensemble + cada modelo do ensemble, com checkpoint e metricas de
+  `resultados_ensemble/resultado_{val,test}.json`) e `opcao_padrao`. `metricas_ok` so e verdadeiro se o
+  cache `deteccoes_{val,test}.json` registra os mesmos checkpoints carregados e os mesmos pesos.
+  `POST /analisar` aceita o campo `modelo` (id da opcao; desconhecido -> 400) e devolve `opcao`.
+  Continua: modelos carregados uma vez, 1 worker, `trava` na inferencia, endpoint `def`.
+- `VinDR_ensemble.detectar_ensemble(..., so=None)`: com `so='FCOS'` (etc.) roda so esse modelo, sem
+  fusao, com os mesmos filtros. Nenhum modelo extra e carregado: os 3 ja estao na GPU para o ensemble.
+- `index.html`: card "Modelo" com seletor e tabela (val mAP@0,50; teste mAP@0,50, mAP@0,75, TPR, FPPI)
+  e nota de leitura; trocar o modelo refaz a analise da imagem aberta. Arredondamento com +1e-9
+  (0,6635 -> 66,4, como no terminal). Fim de linha CRLF preservado.
+- Testado: sintaxe Python/JS; `ler_metricas()` com os arquivos reais (metricas_ok = true); layout no
+  Chromium com um /status simulado (sem erros no console). NAO TESTADO: servidor com os modelos reais.
