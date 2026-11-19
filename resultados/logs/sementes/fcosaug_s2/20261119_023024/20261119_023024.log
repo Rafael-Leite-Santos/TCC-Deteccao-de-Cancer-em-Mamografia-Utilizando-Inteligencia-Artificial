@@ -1,0 +1,1628 @@
+2026/11/19 02:30:27 - mmengine - INFO - 
+------------------------------------------------------------
+System environment:
+    sys.platform: win32
+    Python: 3.9.13 (tags/v3.9.13:6de2ca5, May 17 2022, 16:36:42) [MSC v.1929 64 bit (AMD64)]
+    CUDA available: True
+    MUSA available: False
+    numpy_random_seed: 2
+    GPU 0: NVIDIA GeForce RTX 4060 Laptop GPU
+    CUDA_HOME: C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.4
+    NVCC: Cuda compilation tools, release 12.4, V12.4.99
+    MSVC: Microsoft (R) C/C++ Optimizing Compiler Version 19.51.36260 for x64
+    GCC: n/a
+    PyTorch: 2.1.0+cu121
+    PyTorch compiling details: PyTorch built with:
+  - C++ Version: 199711
+  - MSVC 192930151
+  - Intel(R) Math Kernel Library Version 2020.0.2 Product Build 20200624 for Intel(R) 64 architecture applications
+  - Intel(R) MKL-DNN v3.1.1 (Git Hash 64f6bcbcbab628e96f33a62c3e975f8535a7bde4)
+  - OpenMP 2019
+  - LAPACK is enabled (usually provided by MKL)
+  - CPU capability usage: AVX2
+  - CUDA Runtime 12.1
+  - NVCC architecture flags: -gencode;arch=compute_50,code=sm_50;-gencode;arch=compute_60,code=sm_60;-gencode;arch=compute_61,code=sm_61;-gencode;arch=compute_70,code=sm_70;-gencode;arch=compute_75,code=sm_75;-gencode;arch=compute_80,code=sm_80;-gencode;arch=compute_86,code=sm_86;-gencode;arch=compute_90,code=sm_90
+  - CuDNN 8.8.1  (built against CUDA 12.0)
+  - Magma 2.5.4
+  - Build settings: BLAS_INFO=mkl, BUILD_TYPE=Release, CUDA_VERSION=12.1, CUDNN_VERSION=8.8.1, CXX_COMPILER=C:/actions-runner/_work/pytorch/pytorch/builder/windows/tmp_bin/sccache-cl.exe, CXX_FLAGS=/DWIN32 /D_WINDOWS /GR /EHsc /bigobj /FS -DUSE_PTHREADPOOL -DNDEBUG -DUSE_KINETO -DLIBKINETO_NOCUPTI -DLIBKINETO_NOROCTRACER -DUSE_FBGEMM -DUSE_XNNPACK -DSYMBOLICATE_MOBILE_DEBUG_HANDLE /utf-8 /wd4624 /wd4068 /wd4067 /wd4267 /wd4661 /wd4717 /wd4244 /wd4804 /wd4273, LAPACK_INFO=mkl, PERF_WITH_AVX=1, PERF_WITH_AVX2=1, PERF_WITH_AVX512=1, TORCH_DISABLE_GPU_ASSERTS=OFF, TORCH_VERSION=2.1.0, USE_CUDA=ON, USE_CUDNN=ON, USE_EXCEPTION_PTR=1, USE_GFLAGS=OFF, USE_GLOG=OFF, USE_MKL=ON, USE_MKLDNN=ON, USE_MPI=OFF, USE_NCCL=OFF, USE_NNPACK=OFF, USE_OPENMP=ON, USE_ROCM=OFF, 
+
+    TorchVision: 0.16.0+cu121
+    OpenCV: 4.7.0
+    MMEngine: 0.10.7
+
+Runtime environment:
+    dist_cfg: {'backend': 'nccl'}
+    seed: 2
+    deterministic: False
+    Distributed launcher: none
+    Distributed training: False
+    GPU number: 1
+------------------------------------------------------------
+
+2026/11/19 02:30:27 - mmengine - INFO - Config:
+ANNOTS_DIR = 'annotations_VinDR'
+IMAGES_ROOT = 'data/VinDr-Mammo/images'
+VINDR_ROOT = 'data/VinDr-Mammo'
+custom_hooks = [
+    dict(
+        min_delta=0.005,
+        monitor='coco/bbox_mAP_50',
+        patience=8,
+        rule='greater',
+        type='EarlyStoppingHook'),
+]
+custom_imports = dict(
+    allow_failed_imports=False, imports=[
+        'VinDR_pipeline',
+    ])
+default_hooks = dict(
+    checkpoint=dict(
+        interval=1,
+        max_keep_ckpts=3,
+        rule='greater',
+        save_best='coco/bbox_mAP_50',
+        type='CheckpointHook'),
+    logger=dict(interval=50, type='LoggerHook'))
+default_scope = 'mmdet'
+load_from = None
+model = dict(
+    backbone=dict(
+        depth=50,
+        frozen_stages=1,
+        init_cfg=dict(checkpoint='torchvision://resnet50', type='Pretrained'),
+        norm_cfg=dict(requires_grad=True, type='BN'),
+        norm_eval=True,
+        num_stages=4,
+        out_indices=(
+            0,
+            1,
+            2,
+            3,
+        ),
+        style='pytorch',
+        type='ResNet'),
+    bbox_head=dict(
+        feat_channels=256,
+        in_channels=256,
+        loss_bbox=dict(loss_weight=1.0, type='IoULoss'),
+        loss_centerness=dict(
+            loss_weight=1.0, type='CrossEntropyLoss', use_sigmoid=True),
+        loss_cls=dict(
+            alpha=0.25,
+            gamma=2.0,
+            loss_weight=1.0,
+            type='FocalLoss',
+            use_sigmoid=True),
+        norm_cfg=dict(num_groups=32, requires_grad=True, type='GN'),
+        num_classes=1,
+        stacked_convs=4,
+        strides=[
+            8,
+            16,
+            32,
+            64,
+            128,
+        ],
+        type='FCOSHead'),
+    data_preprocessor=dict(
+        bgr_to_rgb=True,
+        mean=[
+            123.675,
+            116.28,
+            103.53,
+        ],
+        pad_size_divisor=32,
+        std=[
+            58.395,
+            57.12,
+            57.375,
+        ],
+        type='DetDataPreprocessor'),
+    neck=dict(
+        add_extra_convs='on_output',
+        in_channels=[
+            256,
+            512,
+            1024,
+            2048,
+        ],
+        num_outs=5,
+        out_channels=256,
+        relu_before_extra_convs=True,
+        start_level=1,
+        type='FPN'),
+    test_cfg=dict(
+        max_per_img=100,
+        min_bbox_size=0,
+        nms=dict(iou_threshold=0.5, type='nms'),
+        nms_pre=1000,
+        score_thr=0.05),
+    type='FCOS')
+optim_wrapper = dict(
+    clip_grad=dict(max_norm=35, norm_type=2),
+    optimizer=dict(lr=0.00125, momentum=0.9, type='SGD', weight_decay=0.0001),
+    paramwise_cfg=dict(bias_decay_mult=0.0, bias_lr_mult=2.0),
+    type='OptimWrapper')
+param_scheduler = [
+    dict(
+        begin=0, by_epoch=False, end=500, start_factor=0.001, type='LinearLR'),
+    dict(
+        T_max=40,
+        begin=0,
+        by_epoch=True,
+        convert_to_iter_based=True,
+        end=40,
+        eta_min=1e-05,
+        type='CosineAnnealingLR'),
+]
+randomness = dict(deterministic=False, seed=2)
+resume = False
+test_cfg = dict(type='TestLoop')
+test_dataloader = dict(
+    batch_size=1,
+    dataset=dict(
+        ann_file='annotations_VinDR/test.json',
+        data_prefix=dict(img='data/VinDr-Mammo/images'),
+        data_root='',
+        pipeline=[
+            dict(type='LoadVindrDicom'),
+            dict(keep_ratio=True, scale=(
+                1024,
+                1024,
+            ), type='Resize'),
+            dict(type='LoadAnnotations', with_bbox=True),
+            dict(type='PackDetInputs'),
+        ],
+        test_mode=True,
+        type='VindrMammoDataset'),
+    num_workers=0,
+    persistent_workers=False,
+    sampler=dict(shuffle=False, type='DefaultSampler'))
+test_evaluator = dict(
+    ann_file='annotations_VinDR/test.json',
+    format_only=False,
+    metric='bbox',
+    type='CocoMetric')
+train_cfg = dict(max_epochs=40, type='EpochBasedTrainLoop', val_interval=1)
+train_dataloader = dict(
+    batch_size=2,
+    dataset=dict(
+        ann_file='annotations_VinDR/train.json',
+        data_prefix=dict(img='data/VinDr-Mammo/images'),
+        data_root='',
+        pipeline=[
+            dict(type='LoadVindrDicom'),
+            dict(type='LoadAnnotations', with_bbox=True),
+            dict(
+                keep_ratio=True,
+                ratio_range=(
+                    0.8,
+                    1.2,
+                ),
+                scale=(
+                    1024,
+                    1024,
+                ),
+                type='RandomResize'),
+            dict(prob=0.5, type='RandomFlip'),
+            dict(
+                img_border_value=0,
+                max_mag=10.0,
+                prob=0.5,
+                reversal_prob=0.5,
+                type='Rotate'),
+            dict(
+                img_border_value=0,
+                max_mag=0.1,
+                prob=0.5,
+                reversal_prob=0.5,
+                type='TranslateX'),
+            dict(
+                img_border_value=0,
+                max_mag=0.1,
+                prob=0.5,
+                reversal_prob=0.5,
+                type='TranslateY'),
+            dict(max_mag=1.2, min_mag=0.8, prob=0.5, type='Brightness'),
+            dict(max_mag=1.2, min_mag=0.8, prob=0.5, type='Contrast'),
+            dict(type='PackDetInputs'),
+        ],
+        type='VindrMammoDataset'),
+    num_workers=2,
+    persistent_workers=True,
+    sampler=dict(shuffle=True, type='DefaultSampler'))
+train_pipeline = [
+    dict(type='LoadVindrDicom'),
+    dict(type='LoadAnnotations', with_bbox=True),
+    dict(
+        keep_ratio=True,
+        ratio_range=(
+            0.8,
+            1.2,
+        ),
+        scale=(
+            1024,
+            1024,
+        ),
+        type='RandomResize'),
+    dict(prob=0.5, type='RandomFlip'),
+    dict(
+        img_border_value=0,
+        max_mag=10.0,
+        prob=0.5,
+        reversal_prob=0.5,
+        type='Rotate'),
+    dict(
+        img_border_value=0,
+        max_mag=0.1,
+        prob=0.5,
+        reversal_prob=0.5,
+        type='TranslateX'),
+    dict(
+        img_border_value=0,
+        max_mag=0.1,
+        prob=0.5,
+        reversal_prob=0.5,
+        type='TranslateY'),
+    dict(max_mag=1.2, min_mag=0.8, prob=0.5, type='Brightness'),
+    dict(max_mag=1.2, min_mag=0.8, prob=0.5, type='Contrast'),
+    dict(type='PackDetInputs'),
+]
+val_cfg = dict(type='ValLoop')
+val_dataloader = dict(
+    batch_size=1,
+    dataset=dict(
+        ann_file='annotations_VinDR/val.json',
+        data_prefix=dict(img='data/VinDr-Mammo/images'),
+        data_root='',
+        pipeline=[
+            dict(type='LoadVindrDicom'),
+            dict(keep_ratio=True, scale=(
+                1024,
+                1024,
+            ), type='Resize'),
+            dict(type='LoadAnnotations', with_bbox=True),
+            dict(type='PackDetInputs'),
+        ],
+        test_mode=True,
+        type='VindrMammoDataset'),
+    num_workers=0,
+    persistent_workers=False,
+    sampler=dict(shuffle=False, type='DefaultSampler'))
+val_evaluator = dict(
+    ann_file='annotations_VinDR/val.json',
+    format_only=False,
+    metric='bbox',
+    type='CocoMetric')
+val_pipeline = [
+    dict(type='LoadVindrDicom'),
+    dict(keep_ratio=True, scale=(
+        1024,
+        1024,
+    ), type='Resize'),
+    dict(type='LoadAnnotations', with_bbox=True),
+    dict(type='PackDetInputs'),
+]
+work_dir = './work_dirs/sementes/fcosaug_s2'
+
+2026/11/19 02:30:27 - mmengine - INFO - Distributed training is not used, all SyncBatchNorm (SyncBN) layers in the model will be automatically reverted to BatchNormXd layers if they are used.
+2026/11/19 02:30:27 - mmengine - INFO - Hooks will be executed in the following order:
+before_run:
+(VERY_HIGH   ) RuntimeInfoHook                    
+(BELOW_NORMAL) LoggerHook                         
+(LOWEST      ) EarlyStoppingHook                  
+ -------------------- 
+before_train:
+(VERY_HIGH   ) RuntimeInfoHook                    
+(NORMAL      ) IterTimerHook                      
+(VERY_LOW    ) CheckpointHook                     
+ -------------------- 
+before_train_epoch:
+(VERY_HIGH   ) RuntimeInfoHook                    
+(NORMAL      ) IterTimerHook                      
+(NORMAL      ) DistSamplerSeedHook                
+ -------------------- 
+before_train_iter:
+(VERY_HIGH   ) RuntimeInfoHook                    
+(NORMAL      ) IterTimerHook                      
+ -------------------- 
+after_train_iter:
+(VERY_HIGH   ) RuntimeInfoHook                    
+(NORMAL      ) IterTimerHook                      
+(BELOW_NORMAL) LoggerHook                         
+(LOW         ) ParamSchedulerHook                 
+(VERY_LOW    ) CheckpointHook                     
+ -------------------- 
+after_train_epoch:
+(NORMAL      ) IterTimerHook                      
+(LOW         ) ParamSchedulerHook                 
+(VERY_LOW    ) CheckpointHook                     
+ -------------------- 
+before_val:
+(VERY_HIGH   ) RuntimeInfoHook                    
+ -------------------- 
+before_val_epoch:
+(NORMAL      ) IterTimerHook                      
+ -------------------- 
+before_val_iter:
+(NORMAL      ) IterTimerHook                      
+ -------------------- 
+after_val_iter:
+(NORMAL      ) IterTimerHook                      
+(BELOW_NORMAL) LoggerHook                         
+ -------------------- 
+after_val_epoch:
+(VERY_HIGH   ) RuntimeInfoHook                    
+(NORMAL      ) IterTimerHook                      
+(BELOW_NORMAL) LoggerHook                         
+(LOW         ) ParamSchedulerHook                 
+(VERY_LOW    ) CheckpointHook                     
+(LOWEST      ) EarlyStoppingHook                  
+ -------------------- 
+after_val:
+(VERY_HIGH   ) RuntimeInfoHook                    
+ -------------------- 
+after_train:
+(VERY_HIGH   ) RuntimeInfoHook                    
+(VERY_LOW    ) CheckpointHook                     
+ -------------------- 
+before_test:
+(VERY_HIGH   ) RuntimeInfoHook                    
+ -------------------- 
+before_test_epoch:
+(NORMAL      ) IterTimerHook                      
+ -------------------- 
+before_test_iter:
+(NORMAL      ) IterTimerHook                      
+ -------------------- 
+after_test_iter:
+(NORMAL      ) IterTimerHook                      
+(BELOW_NORMAL) LoggerHook                         
+ -------------------- 
+after_test_epoch:
+(VERY_HIGH   ) RuntimeInfoHook                    
+(NORMAL      ) IterTimerHook                      
+(BELOW_NORMAL) LoggerHook                         
+ -------------------- 
+after_test:
+(VERY_HIGH   ) RuntimeInfoHook                    
+ -------------------- 
+after_run:
+(BELOW_NORMAL) LoggerHook                         
+ -------------------- 
+2026/11/19 02:30:27 - mmengine - WARNING - backbone.conv1.weight is skipped since its requires_grad=False
+2026/11/19 02:30:27 - mmengine - WARNING - backbone.bn1.weight is skipped since its requires_grad=False
+2026/11/19 02:30:27 - mmengine - WARNING - backbone.bn1.bias is skipped since its requires_grad=False
+2026/11/19 02:30:27 - mmengine - WARNING - backbone.layer1.0.conv1.weight is skipped since its requires_grad=False
+2026/11/19 02:30:27 - mmengine - WARNING - backbone.layer1.0.bn1.weight is skipped since its requires_grad=False
+2026/11/19 02:30:27 - mmengine - WARNING - backbone.layer1.0.bn1.bias is skipped since its requires_grad=False
+2026/11/19 02:30:27 - mmengine - WARNING - backbone.layer1.0.conv2.weight is skipped since its requires_grad=False
+2026/11/19 02:30:27 - mmengine - WARNING - backbone.layer1.0.bn2.weight is skipped since its requires_grad=False
+2026/11/19 02:30:27 - mmengine - WARNING - backbone.layer1.0.bn2.bias is skipped since its requires_grad=False
+2026/11/19 02:30:27 - mmengine - WARNING - backbone.layer1.0.conv3.weight is skipped since its requires_grad=False
+2026/11/19 02:30:27 - mmengine - WARNING - backbone.layer1.0.bn3.weight is skipped since its requires_grad=False
+2026/11/19 02:30:27 - mmengine - WARNING - backbone.layer1.0.bn3.bias is skipped since its requires_grad=False
+2026/11/19 02:30:27 - mmengine - WARNING - backbone.layer1.0.downsample.0.weight is skipped since its requires_grad=False
+2026/11/19 02:30:27 - mmengine - WARNING - backbone.layer1.0.downsample.1.weight is skipped since its requires_grad=False
+2026/11/19 02:30:27 - mmengine - WARNING - backbone.layer1.0.downsample.1.bias is skipped since its requires_grad=False
+2026/11/19 02:30:27 - mmengine - WARNING - backbone.layer1.1.conv1.weight is skipped since its requires_grad=False
+2026/11/19 02:30:27 - mmengine - WARNING - backbone.layer1.1.bn1.weight is skipped since its requires_grad=False
+2026/11/19 02:30:27 - mmengine - WARNING - backbone.layer1.1.bn1.bias is skipped since its requires_grad=False
+2026/11/19 02:30:27 - mmengine - WARNING - backbone.layer1.1.conv2.weight is skipped since its requires_grad=False
+2026/11/19 02:30:27 - mmengine - WARNING - backbone.layer1.1.bn2.weight is skipped since its requires_grad=False
+2026/11/19 02:30:27 - mmengine - WARNING - backbone.layer1.1.bn2.bias is skipped since its requires_grad=False
+2026/11/19 02:30:27 - mmengine - WARNING - backbone.layer1.1.conv3.weight is skipped since its requires_grad=False
+2026/11/19 02:30:27 - mmengine - WARNING - backbone.layer1.1.bn3.weight is skipped since its requires_grad=False
+2026/11/19 02:30:27 - mmengine - WARNING - backbone.layer1.1.bn3.bias is skipped since its requires_grad=False
+2026/11/19 02:30:27 - mmengine - WARNING - backbone.layer1.2.conv1.weight is skipped since its requires_grad=False
+2026/11/19 02:30:27 - mmengine - WARNING - backbone.layer1.2.bn1.weight is skipped since its requires_grad=False
+2026/11/19 02:30:27 - mmengine - WARNING - backbone.layer1.2.bn1.bias is skipped since its requires_grad=False
+2026/11/19 02:30:27 - mmengine - WARNING - backbone.layer1.2.conv2.weight is skipped since its requires_grad=False
+2026/11/19 02:30:27 - mmengine - WARNING - backbone.layer1.2.bn2.weight is skipped since its requires_grad=False
+2026/11/19 02:30:27 - mmengine - WARNING - backbone.layer1.2.bn2.bias is skipped since its requires_grad=False
+2026/11/19 02:30:27 - mmengine - WARNING - backbone.layer1.2.conv3.weight is skipped since its requires_grad=False
+2026/11/19 02:30:27 - mmengine - WARNING - backbone.layer1.2.bn3.weight is skipped since its requires_grad=False
+2026/11/19 02:30:27 - mmengine - WARNING - backbone.layer1.2.bn3.bias is skipped since its requires_grad=False
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- backbone.layer2.0.bn1.bias:weight_decay=0.0
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- backbone.layer2.0.bn2.bias:weight_decay=0.0
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- backbone.layer2.0.bn3.bias:weight_decay=0.0
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- backbone.layer2.0.downsample.1.bias:weight_decay=0.0
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- backbone.layer2.1.bn1.bias:weight_decay=0.0
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- backbone.layer2.1.bn2.bias:weight_decay=0.0
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- backbone.layer2.1.bn3.bias:weight_decay=0.0
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- backbone.layer2.2.bn1.bias:weight_decay=0.0
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- backbone.layer2.2.bn2.bias:weight_decay=0.0
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- backbone.layer2.2.bn3.bias:weight_decay=0.0
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- backbone.layer2.3.bn1.bias:weight_decay=0.0
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- backbone.layer2.3.bn2.bias:weight_decay=0.0
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- backbone.layer2.3.bn3.bias:weight_decay=0.0
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- backbone.layer3.0.bn1.bias:weight_decay=0.0
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- backbone.layer3.0.bn2.bias:weight_decay=0.0
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- backbone.layer3.0.bn3.bias:weight_decay=0.0
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- backbone.layer3.0.downsample.1.bias:weight_decay=0.0
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- backbone.layer3.1.bn1.bias:weight_decay=0.0
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- backbone.layer3.1.bn2.bias:weight_decay=0.0
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- backbone.layer3.1.bn3.bias:weight_decay=0.0
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- backbone.layer3.2.bn1.bias:weight_decay=0.0
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- backbone.layer3.2.bn2.bias:weight_decay=0.0
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- backbone.layer3.2.bn3.bias:weight_decay=0.0
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- backbone.layer3.3.bn1.bias:weight_decay=0.0
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- backbone.layer3.3.bn2.bias:weight_decay=0.0
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- backbone.layer3.3.bn3.bias:weight_decay=0.0
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- backbone.layer3.4.bn1.bias:weight_decay=0.0
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- backbone.layer3.4.bn2.bias:weight_decay=0.0
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- backbone.layer3.4.bn3.bias:weight_decay=0.0
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- backbone.layer3.5.bn1.bias:weight_decay=0.0
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- backbone.layer3.5.bn2.bias:weight_decay=0.0
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- backbone.layer3.5.bn3.bias:weight_decay=0.0
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- backbone.layer4.0.bn1.bias:weight_decay=0.0
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- backbone.layer4.0.bn2.bias:weight_decay=0.0
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- backbone.layer4.0.bn3.bias:weight_decay=0.0
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- backbone.layer4.0.downsample.1.bias:weight_decay=0.0
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- backbone.layer4.1.bn1.bias:weight_decay=0.0
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- backbone.layer4.1.bn2.bias:weight_decay=0.0
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- backbone.layer4.1.bn3.bias:weight_decay=0.0
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- backbone.layer4.2.bn1.bias:weight_decay=0.0
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- backbone.layer4.2.bn2.bias:weight_decay=0.0
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- backbone.layer4.2.bn3.bias:weight_decay=0.0
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- neck.lateral_convs.0.conv.bias:lr=0.0025
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- neck.lateral_convs.0.conv.bias:weight_decay=0.0
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- neck.lateral_convs.1.conv.bias:lr=0.0025
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- neck.lateral_convs.1.conv.bias:weight_decay=0.0
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- neck.lateral_convs.2.conv.bias:lr=0.0025
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- neck.lateral_convs.2.conv.bias:weight_decay=0.0
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- neck.fpn_convs.0.conv.bias:lr=0.0025
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- neck.fpn_convs.0.conv.bias:weight_decay=0.0
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- neck.fpn_convs.1.conv.bias:lr=0.0025
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- neck.fpn_convs.1.conv.bias:weight_decay=0.0
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- neck.fpn_convs.2.conv.bias:lr=0.0025
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- neck.fpn_convs.2.conv.bias:weight_decay=0.0
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- neck.fpn_convs.3.conv.bias:lr=0.0025
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- neck.fpn_convs.3.conv.bias:weight_decay=0.0
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- neck.fpn_convs.4.conv.bias:lr=0.0025
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- neck.fpn_convs.4.conv.bias:weight_decay=0.0
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- bbox_head.cls_convs.0.gn.bias:weight_decay=0.0
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- bbox_head.cls_convs.1.gn.bias:weight_decay=0.0
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- bbox_head.cls_convs.2.gn.bias:weight_decay=0.0
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- bbox_head.cls_convs.3.gn.bias:weight_decay=0.0
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- bbox_head.reg_convs.0.gn.bias:weight_decay=0.0
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- bbox_head.reg_convs.1.gn.bias:weight_decay=0.0
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- bbox_head.reg_convs.2.gn.bias:weight_decay=0.0
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- bbox_head.reg_convs.3.gn.bias:weight_decay=0.0
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- bbox_head.conv_cls.bias:lr=0.0025
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- bbox_head.conv_cls.bias:weight_decay=0.0
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- bbox_head.conv_reg.bias:lr=0.0025
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- bbox_head.conv_reg.bias:weight_decay=0.0
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- bbox_head.conv_centerness.bias:lr=0.0025
+2026/11/19 02:30:27 - mmengine - INFO - paramwise_options -- bbox_head.conv_centerness.bias:weight_decay=0.0
+2026/11/19 02:30:28 - mmengine - INFO - load model from: torchvision://resnet50
+2026/11/19 02:30:28 - mmengine - INFO - Loads checkpoint by torchvision backend from path: torchvision://resnet50
+2026/11/19 02:30:28 - mmengine - WARNING - The model and loaded state dict do not match exactly
+
+unexpected key in source state_dict: fc.weight, fc.bias
+
+Name of parameter - Initialization information
+
+backbone.conv1.weight - torch.Size([64, 3, 7, 7]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.bn1.weight - torch.Size([64]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.bn1.bias - torch.Size([64]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer1.0.conv1.weight - torch.Size([64, 64, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer1.0.bn1.weight - torch.Size([64]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer1.0.bn1.bias - torch.Size([64]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer1.0.conv2.weight - torch.Size([64, 64, 3, 3]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer1.0.bn2.weight - torch.Size([64]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer1.0.bn2.bias - torch.Size([64]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer1.0.conv3.weight - torch.Size([256, 64, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer1.0.bn3.weight - torch.Size([256]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer1.0.bn3.bias - torch.Size([256]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer1.0.downsample.0.weight - torch.Size([256, 64, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer1.0.downsample.1.weight - torch.Size([256]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer1.0.downsample.1.bias - torch.Size([256]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer1.1.conv1.weight - torch.Size([64, 256, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer1.1.bn1.weight - torch.Size([64]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer1.1.bn1.bias - torch.Size([64]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer1.1.conv2.weight - torch.Size([64, 64, 3, 3]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer1.1.bn2.weight - torch.Size([64]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer1.1.bn2.bias - torch.Size([64]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer1.1.conv3.weight - torch.Size([256, 64, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer1.1.bn3.weight - torch.Size([256]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer1.1.bn3.bias - torch.Size([256]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer1.2.conv1.weight - torch.Size([64, 256, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer1.2.bn1.weight - torch.Size([64]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer1.2.bn1.bias - torch.Size([64]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer1.2.conv2.weight - torch.Size([64, 64, 3, 3]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer1.2.bn2.weight - torch.Size([64]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer1.2.bn2.bias - torch.Size([64]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer1.2.conv3.weight - torch.Size([256, 64, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer1.2.bn3.weight - torch.Size([256]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer1.2.bn3.bias - torch.Size([256]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.0.conv1.weight - torch.Size([128, 256, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.0.bn1.weight - torch.Size([128]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.0.bn1.bias - torch.Size([128]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.0.conv2.weight - torch.Size([128, 128, 3, 3]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.0.bn2.weight - torch.Size([128]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.0.bn2.bias - torch.Size([128]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.0.conv3.weight - torch.Size([512, 128, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.0.bn3.weight - torch.Size([512]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.0.bn3.bias - torch.Size([512]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.0.downsample.0.weight - torch.Size([512, 256, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.0.downsample.1.weight - torch.Size([512]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.0.downsample.1.bias - torch.Size([512]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.1.conv1.weight - torch.Size([128, 512, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.1.bn1.weight - torch.Size([128]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.1.bn1.bias - torch.Size([128]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.1.conv2.weight - torch.Size([128, 128, 3, 3]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.1.bn2.weight - torch.Size([128]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.1.bn2.bias - torch.Size([128]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.1.conv3.weight - torch.Size([512, 128, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.1.bn3.weight - torch.Size([512]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.1.bn3.bias - torch.Size([512]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.2.conv1.weight - torch.Size([128, 512, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.2.bn1.weight - torch.Size([128]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.2.bn1.bias - torch.Size([128]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.2.conv2.weight - torch.Size([128, 128, 3, 3]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.2.bn2.weight - torch.Size([128]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.2.bn2.bias - torch.Size([128]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.2.conv3.weight - torch.Size([512, 128, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.2.bn3.weight - torch.Size([512]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.2.bn3.bias - torch.Size([512]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.3.conv1.weight - torch.Size([128, 512, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.3.bn1.weight - torch.Size([128]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.3.bn1.bias - torch.Size([128]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.3.conv2.weight - torch.Size([128, 128, 3, 3]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.3.bn2.weight - torch.Size([128]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.3.bn2.bias - torch.Size([128]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.3.conv3.weight - torch.Size([512, 128, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.3.bn3.weight - torch.Size([512]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer2.3.bn3.bias - torch.Size([512]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.0.conv1.weight - torch.Size([256, 512, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.0.bn1.weight - torch.Size([256]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.0.bn1.bias - torch.Size([256]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.0.conv2.weight - torch.Size([256, 256, 3, 3]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.0.bn2.weight - torch.Size([256]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.0.bn2.bias - torch.Size([256]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.0.conv3.weight - torch.Size([1024, 256, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.0.bn3.weight - torch.Size([1024]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.0.bn3.bias - torch.Size([1024]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.0.downsample.0.weight - torch.Size([1024, 512, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.0.downsample.1.weight - torch.Size([1024]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.0.downsample.1.bias - torch.Size([1024]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.1.conv1.weight - torch.Size([256, 1024, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.1.bn1.weight - torch.Size([256]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.1.bn1.bias - torch.Size([256]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.1.conv2.weight - torch.Size([256, 256, 3, 3]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.1.bn2.weight - torch.Size([256]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.1.bn2.bias - torch.Size([256]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.1.conv3.weight - torch.Size([1024, 256, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.1.bn3.weight - torch.Size([1024]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.1.bn3.bias - torch.Size([1024]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.2.conv1.weight - torch.Size([256, 1024, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.2.bn1.weight - torch.Size([256]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.2.bn1.bias - torch.Size([256]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.2.conv2.weight - torch.Size([256, 256, 3, 3]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.2.bn2.weight - torch.Size([256]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.2.bn2.bias - torch.Size([256]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.2.conv3.weight - torch.Size([1024, 256, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.2.bn3.weight - torch.Size([1024]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.2.bn3.bias - torch.Size([1024]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.3.conv1.weight - torch.Size([256, 1024, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.3.bn1.weight - torch.Size([256]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.3.bn1.bias - torch.Size([256]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.3.conv2.weight - torch.Size([256, 256, 3, 3]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.3.bn2.weight - torch.Size([256]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.3.bn2.bias - torch.Size([256]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.3.conv3.weight - torch.Size([1024, 256, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.3.bn3.weight - torch.Size([1024]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.3.bn3.bias - torch.Size([1024]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.4.conv1.weight - torch.Size([256, 1024, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.4.bn1.weight - torch.Size([256]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.4.bn1.bias - torch.Size([256]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.4.conv2.weight - torch.Size([256, 256, 3, 3]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.4.bn2.weight - torch.Size([256]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.4.bn2.bias - torch.Size([256]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.4.conv3.weight - torch.Size([1024, 256, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.4.bn3.weight - torch.Size([1024]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.4.bn3.bias - torch.Size([1024]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.5.conv1.weight - torch.Size([256, 1024, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.5.bn1.weight - torch.Size([256]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.5.bn1.bias - torch.Size([256]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.5.conv2.weight - torch.Size([256, 256, 3, 3]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.5.bn2.weight - torch.Size([256]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.5.bn2.bias - torch.Size([256]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.5.conv3.weight - torch.Size([1024, 256, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.5.bn3.weight - torch.Size([1024]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer3.5.bn3.bias - torch.Size([1024]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer4.0.conv1.weight - torch.Size([512, 1024, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer4.0.bn1.weight - torch.Size([512]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer4.0.bn1.bias - torch.Size([512]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer4.0.conv2.weight - torch.Size([512, 512, 3, 3]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer4.0.bn2.weight - torch.Size([512]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer4.0.bn2.bias - torch.Size([512]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer4.0.conv3.weight - torch.Size([2048, 512, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer4.0.bn3.weight - torch.Size([2048]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer4.0.bn3.bias - torch.Size([2048]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer4.0.downsample.0.weight - torch.Size([2048, 1024, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer4.0.downsample.1.weight - torch.Size([2048]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer4.0.downsample.1.bias - torch.Size([2048]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer4.1.conv1.weight - torch.Size([512, 2048, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer4.1.bn1.weight - torch.Size([512]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer4.1.bn1.bias - torch.Size([512]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer4.1.conv2.weight - torch.Size([512, 512, 3, 3]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer4.1.bn2.weight - torch.Size([512]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer4.1.bn2.bias - torch.Size([512]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer4.1.conv3.weight - torch.Size([2048, 512, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer4.1.bn3.weight - torch.Size([2048]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer4.1.bn3.bias - torch.Size([2048]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer4.2.conv1.weight - torch.Size([512, 2048, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer4.2.bn1.weight - torch.Size([512]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer4.2.bn1.bias - torch.Size([512]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer4.2.conv2.weight - torch.Size([512, 512, 3, 3]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer4.2.bn2.weight - torch.Size([512]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer4.2.bn2.bias - torch.Size([512]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer4.2.conv3.weight - torch.Size([2048, 512, 1, 1]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer4.2.bn3.weight - torch.Size([2048]): 
+PretrainedInit: load from torchvision://resnet50 
+
+backbone.layer4.2.bn3.bias - torch.Size([2048]): 
+PretrainedInit: load from torchvision://resnet50 
+
+neck.lateral_convs.0.conv.weight - torch.Size([256, 512, 1, 1]): 
+XavierInit: gain=1, distribution=uniform, bias=0 
+
+neck.lateral_convs.0.conv.bias - torch.Size([256]): 
+The value is the same before and after calling `init_weights` of FCOS  
+
+neck.lateral_convs.1.conv.weight - torch.Size([256, 1024, 1, 1]): 
+XavierInit: gain=1, distribution=uniform, bias=0 
+
+neck.lateral_convs.1.conv.bias - torch.Size([256]): 
+The value is the same before and after calling `init_weights` of FCOS  
+
+neck.lateral_convs.2.conv.weight - torch.Size([256, 2048, 1, 1]): 
+XavierInit: gain=1, distribution=uniform, bias=0 
+
+neck.lateral_convs.2.conv.bias - torch.Size([256]): 
+The value is the same before and after calling `init_weights` of FCOS  
+
+neck.fpn_convs.0.conv.weight - torch.Size([256, 256, 3, 3]): 
+XavierInit: gain=1, distribution=uniform, bias=0 
+
+neck.fpn_convs.0.conv.bias - torch.Size([256]): 
+The value is the same before and after calling `init_weights` of FCOS  
+
+neck.fpn_convs.1.conv.weight - torch.Size([256, 256, 3, 3]): 
+XavierInit: gain=1, distribution=uniform, bias=0 
+
+neck.fpn_convs.1.conv.bias - torch.Size([256]): 
+The value is the same before and after calling `init_weights` of FCOS  
+
+neck.fpn_convs.2.conv.weight - torch.Size([256, 256, 3, 3]): 
+XavierInit: gain=1, distribution=uniform, bias=0 
+
+neck.fpn_convs.2.conv.bias - torch.Size([256]): 
+The value is the same before and after calling `init_weights` of FCOS  
+
+neck.fpn_convs.3.conv.weight - torch.Size([256, 256, 3, 3]): 
+XavierInit: gain=1, distribution=uniform, bias=0 
+
+neck.fpn_convs.3.conv.bias - torch.Size([256]): 
+The value is the same before and after calling `init_weights` of FCOS  
+
+neck.fpn_convs.4.conv.weight - torch.Size([256, 256, 3, 3]): 
+XavierInit: gain=1, distribution=uniform, bias=0 
+
+neck.fpn_convs.4.conv.bias - torch.Size([256]): 
+The value is the same before and after calling `init_weights` of FCOS  
+
+bbox_head.cls_convs.0.conv.weight - torch.Size([256, 256, 3, 3]): 
+NormalInit: mean=0, std=0.01, bias=0 
+
+bbox_head.cls_convs.0.gn.weight - torch.Size([256]): 
+The value is the same before and after calling `init_weights` of FCOS  
+
+bbox_head.cls_convs.0.gn.bias - torch.Size([256]): 
+The value is the same before and after calling `init_weights` of FCOS  
+
+bbox_head.cls_convs.1.conv.weight - torch.Size([256, 256, 3, 3]): 
+NormalInit: mean=0, std=0.01, bias=0 
+
+bbox_head.cls_convs.1.gn.weight - torch.Size([256]): 
+The value is the same before and after calling `init_weights` of FCOS  
+
+bbox_head.cls_convs.1.gn.bias - torch.Size([256]): 
+The value is the same before and after calling `init_weights` of FCOS  
+
+bbox_head.cls_convs.2.conv.weight - torch.Size([256, 256, 3, 3]): 
+NormalInit: mean=0, std=0.01, bias=0 
+
+bbox_head.cls_convs.2.gn.weight - torch.Size([256]): 
+The value is the same before and after calling `init_weights` of FCOS  
+
+bbox_head.cls_convs.2.gn.bias - torch.Size([256]): 
+The value is the same before and after calling `init_weights` of FCOS  
+
+bbox_head.cls_convs.3.conv.weight - torch.Size([256, 256, 3, 3]): 
+NormalInit: mean=0, std=0.01, bias=0 
+
+bbox_head.cls_convs.3.gn.weight - torch.Size([256]): 
+The value is the same before and after calling `init_weights` of FCOS  
+
+bbox_head.cls_convs.3.gn.bias - torch.Size([256]): 
+The value is the same before and after calling `init_weights` of FCOS  
+
+bbox_head.reg_convs.0.conv.weight - torch.Size([256, 256, 3, 3]): 
+NormalInit: mean=0, std=0.01, bias=0 
+
+bbox_head.reg_convs.0.gn.weight - torch.Size([256]): 
+The value is the same before and after calling `init_weights` of FCOS  
+
+bbox_head.reg_convs.0.gn.bias - torch.Size([256]): 
+The value is the same before and after calling `init_weights` of FCOS  
+
+bbox_head.reg_convs.1.conv.weight - torch.Size([256, 256, 3, 3]): 
+NormalInit: mean=0, std=0.01, bias=0 
+
+bbox_head.reg_convs.1.gn.weight - torch.Size([256]): 
+The value is the same before and after calling `init_weights` of FCOS  
+
+bbox_head.reg_convs.1.gn.bias - torch.Size([256]): 
+The value is the same before and after calling `init_weights` of FCOS  
+
+bbox_head.reg_convs.2.conv.weight - torch.Size([256, 256, 3, 3]): 
+NormalInit: mean=0, std=0.01, bias=0 
+
+bbox_head.reg_convs.2.gn.weight - torch.Size([256]): 
+The value is the same before and after calling `init_weights` of FCOS  
+
+bbox_head.reg_convs.2.gn.bias - torch.Size([256]): 
+The value is the same before and after calling `init_weights` of FCOS  
+
+bbox_head.reg_convs.3.conv.weight - torch.Size([256, 256, 3, 3]): 
+NormalInit: mean=0, std=0.01, bias=0 
+
+bbox_head.reg_convs.3.gn.weight - torch.Size([256]): 
+The value is the same before and after calling `init_weights` of FCOS  
+
+bbox_head.reg_convs.3.gn.bias - torch.Size([256]): 
+The value is the same before and after calling `init_weights` of FCOS  
+
+bbox_head.conv_cls.weight - torch.Size([1, 256, 3, 3]): 
+NormalInit: mean=0, std=0.01, bias=-4.59511985013459 
+
+bbox_head.conv_cls.bias - torch.Size([1]): 
+NormalInit: mean=0, std=0.01, bias=-4.59511985013459 
+
+bbox_head.conv_reg.weight - torch.Size([4, 256, 3, 3]): 
+NormalInit: mean=0, std=0.01, bias=0 
+
+bbox_head.conv_reg.bias - torch.Size([4]): 
+NormalInit: mean=0, std=0.01, bias=0 
+
+bbox_head.conv_centerness.weight - torch.Size([1, 256, 3, 3]): 
+NormalInit: mean=0, std=0.01, bias=0 
+
+bbox_head.conv_centerness.bias - torch.Size([1]): 
+NormalInit: mean=0, std=0.01, bias=0 
+
+bbox_head.scales.0.scale - torch.Size([]): 
+The value is the same before and after calling `init_weights` of FCOS  
+
+bbox_head.scales.1.scale - torch.Size([]): 
+The value is the same before and after calling `init_weights` of FCOS  
+
+bbox_head.scales.2.scale - torch.Size([]): 
+The value is the same before and after calling `init_weights` of FCOS  
+
+bbox_head.scales.3.scale - torch.Size([]): 
+The value is the same before and after calling `init_weights` of FCOS  
+
+bbox_head.scales.4.scale - torch.Size([]): 
+The value is the same before and after calling `init_weights` of FCOS  
+2026/11/19 02:30:28 - mmengine - WARNING - "FileClient" will be deprecated in future. Please use io functions in https://mmengine.readthedocs.io/en/latest/api/fileio.html#file-io
+2026/11/19 02:30:28 - mmengine - WARNING - "HardDiskBackend" is the alias of "LocalBackend" and the former will be deprecated in future.
+2026/11/19 02:30:28 - mmengine - INFO - Checkpoints will be saved to C:\Users\rl-sa\TCC\tcc-rafael\work_dirs\sementes\fcosaug_s2.
+2026/11/19 02:30:57 - mmengine - INFO - Epoch(train)  [1][ 50/401]  base_lr: 1.2387e-04 lr: 1.2387e-04  eta: 2:35:31  time: 0.4551  data_time: 0.1351  memory: 3474  grad_norm: 98.7600  loss: 2.5419  loss_cls: 0.5394  loss_bbox: 1.3230  loss_centerness: 0.6795
+2026/11/19 02:31:19 - mmengine - INFO - Epoch(train)  [1][100/401]  base_lr: 2.4898e-04 lr: 2.4898e-04  eta: 2:16:53  time: 0.4122  data_time: 0.1197  memory: 3470  grad_norm: 36.4831  loss: 2.1631  loss_cls: 0.5005  loss_bbox: 1.0047  loss_centerness: 0.6579
+2026/11/19 02:31:41 - mmengine - INFO - Epoch(train)  [1][150/401]  base_lr: 3.7405e-04 lr: 3.7405e-04  eta: 2:09:34  time: 0.4344  data_time: 0.1181  memory: 3470  grad_norm: 34.1936  loss: 2.1880  loss_cls: 0.4931  loss_bbox: 1.0395  loss_centerness: 0.6554
+2026/11/19 02:32:03 - mmengine - INFO - Epoch(train)  [1][200/401]  base_lr: 4.9907e-04 lr: 4.9907e-04  eta: 2:06:16  time: 0.4332  data_time: 0.1209  memory: 3470  grad_norm: 29.2815  loss: 2.0546  loss_cls: 0.4895  loss_bbox: 0.9104  loss_centerness: 0.6547
+2026/11/19 02:32:26 - mmengine - INFO - Epoch(train)  [1][250/401]  base_lr: 6.2401e-04 lr: 6.2401e-04  eta: 2:04:15  time: 0.4319  data_time: 0.1096  memory: 3470  grad_norm: 21.5751  loss: 1.8563  loss_cls: 0.3473  loss_bbox: 0.8664  loss_centerness: 0.6426
+2026/11/19 02:32:48 - mmengine - INFO - Epoch(train)  [1][300/401]  base_lr: 7.4887e-04 lr: 7.4887e-04  eta: 2:02:53  time: 0.4556  data_time: 0.1213  memory: 3470  grad_norm: 20.7174  loss: 1.7542  loss_cls: 0.3382  loss_bbox: 0.7744  loss_centerness: 0.6417
+2026/11/19 02:33:11 - mmengine - INFO - Epoch(train)  [1][350/401]  base_lr: 8.7363e-04 lr: 8.7363e-04  eta: 2:01:53  time: 0.4258  data_time: 0.1082  memory: 3470  grad_norm: 20.9101  loss: 2.0660  loss_cls: 0.3656  loss_bbox: 1.0490  loss_centerness: 0.6514
+2026/11/19 02:33:33 - mmengine - INFO - Epoch(train)  [1][400/401]  base_lr: 9.9825e-04 lr: 9.9825e-04  eta: 2:00:54  time: 0.4798  data_time: 0.1610  memory: 3470  grad_norm: 18.8657  loss: 1.9690  loss_cls: 0.4245  loss_bbox: 0.9106  loss_centerness: 0.6339
+2026/11/19 02:33:34 - mmengine - INFO - Exp name: fcosaug_s2_20261119_023024
+2026/11/19 02:33:34 - mmengine - INFO - Saving checkpoint at 1 epochs
+2026/11/19 02:33:59 - mmengine - INFO - Epoch(val)  [1][50/92]    eta: 0:00:20  time: 0.4977  data_time: 0.4040  memory: 2218  
+2026/11/19 02:34:21 - mmengine - INFO - Evaluating bbox...
+2026/11/19 02:34:21 - mmengine - INFO - bbox_mAP_copypaste: 0.065 0.256 0.002 -1.000 0.000 0.066
+2026/11/19 02:34:21 - mmengine - INFO - Epoch(val) [1][92/92]    coco/bbox_mAP: 0.0650  coco/bbox_mAP_50: 0.2560  coco/bbox_mAP_75: 0.0020  coco/bbox_mAP_s: -1.0000  coco/bbox_mAP_m: 0.0000  coco/bbox_mAP_l: 0.0660  data_time: 0.4036  time: 0.4973
+2026/11/19 02:34:22 - mmengine - INFO - The best checkpoint with 0.2560 coco/bbox_mAP_50 at 1 epoch is saved to best_coco_bbox_mAP_50_epoch_1.pth.
+2026/11/19 02:34:45 - mmengine - INFO - Epoch(train)  [2][ 50/401]  base_lr: 1.1252e-03 lr: 1.1252e-03  eta: 1:59:52  time: 0.4006  data_time: 0.0913  memory: 3470  grad_norm: 17.2807  loss: 1.8284  loss_cls: 0.3740  loss_bbox: 0.8401  loss_centerness: 0.6142
+2026/11/19 02:35:08 - mmengine - INFO - Epoch(train)  [2][100/401]  base_lr: 1.2471e-03 lr: 1.2471e-03  eta: 1:59:19  time: 0.4305  data_time: 0.1056  memory: 3470  grad_norm: 16.2171  loss: 1.9564  loss_cls: 0.3507  loss_bbox: 0.9647  loss_centerness: 0.6410
+2026/11/19 02:35:30 - mmengine - INFO - Epoch(train)  [2][150/401]  base_lr: 1.2464e-03 lr: 1.2464e-03  eta: 1:58:20  time: 0.4385  data_time: 0.1078  memory: 3470  grad_norm: 17.4708  loss: 1.8091  loss_cls: 0.3785  loss_bbox: 0.8004  loss_centerness: 0.6302
+2026/11/19 02:35:53 - mmengine - INFO - Epoch(train)  [2][200/401]  base_lr: 1.2457e-03 lr: 1.2457e-03  eta: 1:58:05  time: 0.4667  data_time: 0.1436  memory: 3378  grad_norm: 12.8442  loss: 1.8262  loss_cls: 0.3473  loss_bbox: 0.8379  loss_centerness: 0.6410
+2026/11/19 02:36:16 - mmengine - INFO - Epoch(train)  [2][250/401]  base_lr: 1.2450e-03 lr: 1.2450e-03  eta: 1:57:45  time: 0.5149  data_time: 0.1959  memory: 3470  grad_norm: 12.1893  loss: 1.8409  loss_cls: 0.3753  loss_bbox: 0.8463  loss_centerness: 0.6193
+2026/11/19 02:36:38 - mmengine - INFO - Epoch(train)  [2][300/401]  base_lr: 1.2442e-03 lr: 1.2442e-03  eta: 1:56:59  time: 0.4227  data_time: 0.1220  memory: 3378  grad_norm: 12.2501  loss: 1.7576  loss_cls: 0.3584  loss_bbox: 0.7632  loss_centerness: 0.6360
+2026/11/19 02:37:00 - mmengine - INFO - Epoch(train)  [2][350/401]  base_lr: 1.2433e-03 lr: 1.2433e-03  eta: 1:56:18  time: 0.3968  data_time: 0.1040  memory: 3470  grad_norm: 14.7044  loss: 2.0855  loss_cls: 0.4316  loss_bbox: 1.0151  loss_centerness: 0.6388
+2026/11/19 02:37:22 - mmengine - INFO - Epoch(train)  [2][400/401]  base_lr: 1.2424e-03 lr: 1.2424e-03  eta: 1:55:40  time: 0.4351  data_time: 0.1184  memory: 3470  grad_norm: 14.9384  loss: 1.9943  loss_cls: 0.3194  loss_bbox: 1.0610  loss_centerness: 0.6138
+2026/11/19 02:37:22 - mmengine - INFO - Exp name: fcosaug_s2_20261119_023024
+2026/11/19 02:37:22 - mmengine - INFO - Saving checkpoint at 2 epochs
+2026/11/19 02:37:47 - mmengine - INFO - Epoch(val)  [2][50/92]    eta: 0:00:20  time: 0.5021  data_time: 0.4090  memory: 1917  
+2026/11/19 02:38:09 - mmengine - INFO - Evaluating bbox...
+2026/11/19 02:38:09 - mmengine - INFO - bbox_mAP_copypaste: 0.001 0.007 0.000 -1.000 0.000 0.001
+2026/11/19 02:38:09 - mmengine - INFO - Epoch(val) [2][92/92]    coco/bbox_mAP: 0.0010  coco/bbox_mAP_50: 0.0070  coco/bbox_mAP_75: 0.0000  coco/bbox_mAP_s: -1.0000  coco/bbox_mAP_m: 0.0000  coco/bbox_mAP_l: 0.0010  data_time: 0.4039  time: 0.4922
+2026/11/19 02:38:32 - mmengine - INFO - Epoch(train)  [3][ 50/401]  base_lr: 1.2414e-03 lr: 1.2414e-03  eta: 1:55:16  time: 0.4048  data_time: 0.0932  memory: 3470  grad_norm: 12.2789  loss: 1.7709  loss_cls: 0.4176  loss_bbox: 0.7175  loss_centerness: 0.6358
+2026/11/19 02:38:54 - mmengine - INFO - Epoch(train)  [3][100/401]  base_lr: 1.2404e-03 lr: 1.2404e-03  eta: 1:54:43  time: 0.4200  data_time: 0.0996  memory: 3470  grad_norm: 13.6861  loss: 1.6586  loss_cls: 0.3435  loss_bbox: 0.6924  loss_centerness: 0.6227
+2026/11/19 02:39:16 - mmengine - INFO - Epoch(train)  [3][150/401]  base_lr: 1.2393e-03 lr: 1.2393e-03  eta: 1:54:07  time: 0.4726  data_time: 0.1428  memory: 3470  grad_norm: 12.1317  loss: 1.7726  loss_cls: 0.3062  loss_bbox: 0.8450  loss_centerness: 0.6214
+2026/11/19 02:39:37 - mmengine - INFO - Exp name: fcosaug_s2_20261119_023024
+2026/11/19 02:39:38 - mmengine - INFO - Epoch(train)  [3][200/401]  base_lr: 1.2381e-03 lr: 1.2381e-03  eta: 1:53:38  time: 0.4280  data_time: 0.0969  memory: 3470  grad_norm: 11.4097  loss: 1.9417  loss_cls: 0.2725  loss_bbox: 1.0624  loss_centerness: 0.6069
+2026/11/19 02:40:00 - mmengine - INFO - Epoch(train)  [3][250/401]  base_lr: 1.2369e-03 lr: 1.2369e-03  eta: 1:53:07  time: 0.4510  data_time: 0.1114  memory: 3470  grad_norm: 13.1689  loss: 1.5882  loss_cls: 0.3172  loss_bbox: 0.6423  loss_centerness: 0.6287
+2026/11/19 02:40:22 - mmengine - INFO - Epoch(train)  [3][300/401]  base_lr: 1.2357e-03 lr: 1.2357e-03  eta: 1:52:35  time: 0.4523  data_time: 0.1367  memory: 3470  grad_norm: 12.3756  loss: 1.5930  loss_cls: 0.3381  loss_bbox: 0.6440  loss_centerness: 0.6108
+2026/11/19 02:40:44 - mmengine - INFO - Epoch(train)  [3][350/401]  base_lr: 1.2343e-03 lr: 1.2343e-03  eta: 1:52:11  time: 0.4435  data_time: 0.0867  memory: 3470  grad_norm: 12.9920  loss: 1.6885  loss_cls: 0.3507  loss_bbox: 0.7201  loss_centerness: 0.6177
+2026/11/19 02:41:07 - mmengine - INFO - Epoch(train)  [3][400/401]  base_lr: 1.2329e-03 lr: 1.2329e-03  eta: 1:51:42  time: 0.4259  data_time: 0.0947  memory: 3470  grad_norm: 11.8959  loss: 1.5006  loss_cls: 0.2503  loss_bbox: 0.6455  loss_centerness: 0.6048
+2026/11/19 02:41:07 - mmengine - INFO - Exp name: fcosaug_s2_20261119_023024
+2026/11/19 02:41:07 - mmengine - INFO - Saving checkpoint at 3 epochs
+2026/11/19 02:41:32 - mmengine - INFO - Epoch(val)  [3][50/92]    eta: 0:00:20  time: 0.4971  data_time: 0.4082  memory: 2693  
+2026/11/19 02:41:54 - mmengine - INFO - Evaluating bbox...
+2026/11/19 02:41:54 - mmengine - INFO - bbox_mAP_copypaste: 0.197 0.560 0.082 -1.000 0.000 0.199
+2026/11/19 02:41:54 - mmengine - INFO - Epoch(val) [3][92/92]    coco/bbox_mAP: 0.1970  coco/bbox_mAP_50: 0.5600  coco/bbox_mAP_75: 0.0820  coco/bbox_mAP_s: -1.0000  coco/bbox_mAP_m: 0.0000  coco/bbox_mAP_l: 0.1990  data_time: 0.4056  time: 0.4950
+2026/11/19 02:41:54 - mmengine - INFO - The previous best checkpoint C:\Users\rl-sa\TCC\tcc-rafael\work_dirs\sementes\fcosaug_s2\best_coco_bbox_mAP_50_epoch_1.pth is removed
+2026/11/19 02:41:54 - mmengine - INFO - The best checkpoint with 0.5600 coco/bbox_mAP_50 at 3 epoch is saved to best_coco_bbox_mAP_50_epoch_3.pth.
+2026/11/19 02:42:18 - mmengine - INFO - Epoch(train)  [4][ 50/401]  base_lr: 1.2315e-03 lr: 1.2315e-03  eta: 1:51:21  time: 0.4197  data_time: 0.0908  memory: 3470  grad_norm: 11.7924  loss: 1.4331  loss_cls: 0.2412  loss_bbox: 0.5796  loss_centerness: 0.6122
+2026/11/19 02:42:41 - mmengine - INFO - Epoch(train)  [4][100/401]  base_lr: 1.2300e-03 lr: 1.2300e-03  eta: 1:50:57  time: 0.4670  data_time: 0.1516  memory: 3470  grad_norm: 12.9975  loss: 1.6839  loss_cls: 0.3197  loss_bbox: 0.7461  loss_centerness: 0.6180
+2026/11/19 02:43:03 - mmengine - INFO - Epoch(train)  [4][150/401]  base_lr: 1.2284e-03 lr: 1.2284e-03  eta: 1:50:27  time: 0.4051  data_time: 0.0970  memory: 3470  grad_norm: 11.6392  loss: 1.5078  loss_cls: 0.2699  loss_bbox: 0.6295  loss_centerness: 0.6084
+2026/11/19 02:43:25 - mmengine - INFO - Epoch(train)  [4][200/401]  base_lr: 1.2268e-03 lr: 1.2268e-03  eta: 1:50:05  time: 0.4607  data_time: 0.1533  memory: 3470  grad_norm: 12.7588  loss: 1.7506  loss_cls: 0.2885  loss_bbox: 0.8541  loss_centerness: 0.6079
+2026/11/19 02:43:48 - mmengine - INFO - Epoch(train)  [4][250/401]  base_lr: 1.2251e-03 lr: 1.2251e-03  eta: 1:49:38  time: 0.4454  data_time: 0.0908  memory: 3470  grad_norm: 12.6280  loss: 1.4021  loss_cls: 0.2332  loss_bbox: 0.5683  loss_centerness: 0.6006
+2026/11/19 02:44:11 - mmengine - INFO - Epoch(train)  [4][300/401]  base_lr: 1.2234e-03 lr: 1.2234e-03  eta: 1:49:21  time: 0.4615  data_time: 0.1219  memory: 3470  grad_norm: 13.2892  loss: 1.8938  loss_cls: 0.3499  loss_bbox: 0.9237  loss_centerness: 0.6203
+2026/11/19 02:44:33 - mmengine - INFO - Epoch(train)  [4][350/401]  base_lr: 1.2216e-03 lr: 1.2216e-03  eta: 1:48:57  time: 0.4610  data_time: 0.1293  memory: 3470  grad_norm: 12.7450  loss: 1.6878  loss_cls: 0.2822  loss_bbox: 0.8077  loss_centerness: 0.5979
+2026/11/19 02:44:56 - mmengine - INFO - Epoch(train)  [4][400/401]  base_lr: 1.2198e-03 lr: 1.2198e-03  eta: 1:48:36  time: 0.4584  data_time: 0.1290  memory: 3470  grad_norm: 14.2746  loss: 1.8735  loss_cls: 0.3322  loss_bbox: 0.9168  loss_centerness: 0.6244
+2026/11/19 02:44:56 - mmengine - INFO - Exp name: fcosaug_s2_20261119_023024
+2026/11/19 02:44:56 - mmengine - INFO - Saving checkpoint at 4 epochs
+2026/11/19 02:45:21 - mmengine - INFO - Epoch(val)  [4][50/92]    eta: 0:00:20  time: 0.5031  data_time: 0.4109  memory: 2074  
+2026/11/19 02:45:43 - mmengine - INFO - Evaluating bbox...
+2026/11/19 02:45:43 - mmengine - INFO - bbox_mAP_copypaste: 0.180 0.562 0.037 -1.000 0.000 0.182
+2026/11/19 02:45:43 - mmengine - INFO - Epoch(val) [4][92/92]    coco/bbox_mAP: 0.1800  coco/bbox_mAP_50: 0.5620  coco/bbox_mAP_75: 0.0370  coco/bbox_mAP_s: -1.0000  coco/bbox_mAP_m: 0.0000  coco/bbox_mAP_l: 0.1820  data_time: 0.4052  time: 0.4961
+2026/11/19 02:45:43 - mmengine - INFO - The previous best checkpoint C:\Users\rl-sa\TCC\tcc-rafael\work_dirs\sementes\fcosaug_s2\best_coco_bbox_mAP_50_epoch_3.pth is removed
+2026/11/19 02:45:44 - mmengine - INFO - The best checkpoint with 0.5620 coco/bbox_mAP_50 at 4 epoch is saved to best_coco_bbox_mAP_50_epoch_4.pth.
+2026/11/19 02:46:07 - mmengine - INFO - Epoch(train)  [5][ 50/401]  base_lr: 1.2178e-03 lr: 1.2178e-03  eta: 1:48:10  time: 0.3978  data_time: 0.0564  memory: 3470  grad_norm: 10.9408  loss: 1.5246  loss_cls: 0.2760  loss_bbox: 0.6359  loss_centerness: 0.6127
+2026/11/19 02:46:30 - mmengine - INFO - Epoch(train)  [5][100/401]  base_lr: 1.2159e-03 lr: 1.2159e-03  eta: 1:47:47  time: 0.4520  data_time: 0.1607  memory: 3470  grad_norm: 12.5518  loss: 1.7889  loss_cls: 0.3119  loss_bbox: 0.8659  loss_centerness: 0.6111
+2026/11/19 02:46:52 - mmengine - INFO - Epoch(train)  [5][150/401]  base_lr: 1.2138e-03 lr: 1.2138e-03  eta: 1:47:24  time: 0.4361  data_time: 0.0987  memory: 3470  grad_norm: 11.9618  loss: 1.5632  loss_cls: 0.2744  loss_bbox: 0.6726  loss_centerness: 0.6162
+2026/11/19 02:47:15 - mmengine - INFO - Epoch(train)  [5][200/401]  base_lr: 1.2118e-03 lr: 1.2118e-03  eta: 1:47:00  time: 0.4345  data_time: 0.1223  memory: 3276  grad_norm: 9.9904  loss: 1.4641  loss_cls: 0.3234  loss_bbox: 0.5225  loss_centerness: 0.6182
+2026/11/19 02:47:38 - mmengine - INFO - Epoch(train)  [5][250/401]  base_lr: 1.2096e-03 lr: 1.2096e-03  eta: 1:46:45  time: 0.4912  data_time: 0.1437  memory: 3470  grad_norm: 11.5828  loss: 1.4859  loss_cls: 0.2457  loss_bbox: 0.6332  loss_centerness: 0.6069
+2026/11/19 02:48:00 - mmengine - INFO - Epoch(train)  [5][300/401]  base_lr: 1.2075e-03 lr: 1.2075e-03  eta: 1:46:15  time: 0.4349  data_time: 0.1191  memory: 3470  grad_norm: 9.5221  loss: 1.4082  loss_cls: 0.2868  loss_bbox: 0.5098  loss_centerness: 0.6117
+2026/11/19 02:48:23 - mmengine - INFO - Epoch(train)  [5][350/401]  base_lr: 1.2052e-03 lr: 1.2052e-03  eta: 1:45:54  time: 0.4413  data_time: 0.1105  memory: 3470  grad_norm: 11.7798  loss: 1.6080  loss_cls: 0.2547  loss_bbox: 0.7386  loss_centerness: 0.6147
+2026/11/19 02:48:43 - mmengine - INFO - Exp name: fcosaug_s2_20261119_023024
+2026/11/19 02:48:45 - mmengine - INFO - Epoch(train)  [5][400/401]  base_lr: 1.2029e-03 lr: 1.2029e-03  eta: 1:45:31  time: 0.4655  data_time: 0.1271  memory: 3470  grad_norm: 11.9595  loss: 1.6486  loss_cls: 0.3096  loss_bbox: 0.7237  loss_centerness: 0.6152
+2026/11/19 02:48:46 - mmengine - INFO - Exp name: fcosaug_s2_20261119_023024
+2026/11/19 02:48:46 - mmengine - INFO - Saving checkpoint at 5 epochs
+2026/11/19 02:49:11 - mmengine - INFO - Epoch(val)  [5][50/92]    eta: 0:00:20  time: 0.5016  data_time: 0.4082  memory: 3205  
+2026/11/19 02:49:32 - mmengine - INFO - Evaluating bbox...
+2026/11/19 02:49:32 - mmengine - INFO - bbox_mAP_copypaste: 0.104 0.389 0.008 -1.000 0.000 0.105
+2026/11/19 02:49:32 - mmengine - INFO - Epoch(val) [5][92/92]    coco/bbox_mAP: 0.1040  coco/bbox_mAP_50: 0.3890  coco/bbox_mAP_75: 0.0080  coco/bbox_mAP_s: -1.0000  coco/bbox_mAP_m: 0.0000  coco/bbox_mAP_l: 0.1050  data_time: 0.4024  time: 0.4897
+2026/11/19 02:49:56 - mmengine - INFO - Epoch(train)  [6][ 50/401]  base_lr: 1.2005e-03 lr: 1.2005e-03  eta: 1:45:13  time: 0.4760  data_time: 0.1338  memory: 3470  grad_norm: 10.1528  loss: 1.4156  loss_cls: 0.2242  loss_bbox: 0.5832  loss_centerness: 0.6082
+2026/11/19 02:50:18 - mmengine - INFO - Epoch(train)  [6][100/401]  base_lr: 1.1981e-03 lr: 1.1981e-03  eta: 1:44:51  time: 0.4582  data_time: 0.1440  memory: 3470  grad_norm: 10.0030  loss: 1.4790  loss_cls: 0.2669  loss_bbox: 0.6141  loss_centerness: 0.5980
+2026/11/19 02:50:40 - mmengine - INFO - Epoch(train)  [6][150/401]  base_lr: 1.1957e-03 lr: 1.1957e-03  eta: 1:44:26  time: 0.4711  data_time: 0.1487  memory: 3470  grad_norm: 10.1044  loss: 1.4081  loss_cls: 0.2703  loss_bbox: 0.5275  loss_centerness: 0.6103
+2026/11/19 02:51:03 - mmengine - INFO - Epoch(train)  [6][200/401]  base_lr: 1.1931e-03 lr: 1.1931e-03  eta: 1:44:04  time: 0.4818  data_time: 0.1780  memory: 3470  grad_norm: 10.7843  loss: 1.5472  loss_cls: 0.3015  loss_bbox: 0.6239  loss_centerness: 0.6217
+2026/11/19 02:51:25 - mmengine - INFO - Epoch(train)  [6][250/401]  base_lr: 1.1906e-03 lr: 1.1906e-03  eta: 1:43:40  time: 0.4435  data_time: 0.1272  memory: 3470  grad_norm: 10.8255  loss: 1.4958  loss_cls: 0.2897  loss_bbox: 0.6234  loss_centerness: 0.5826
+2026/11/19 02:51:48 - mmengine - INFO - Epoch(train)  [6][300/401]  base_lr: 1.1880e-03 lr: 1.1880e-03  eta: 1:43:18  time: 0.4365  data_time: 0.0813  memory: 3470  grad_norm: 10.3179  loss: 1.5362  loss_cls: 0.2607  loss_bbox: 0.6561  loss_centerness: 0.6194
+2026/11/19 02:52:11 - mmengine - INFO - Epoch(train)  [6][350/401]  base_lr: 1.1853e-03 lr: 1.1853e-03  eta: 1:42:59  time: 0.4621  data_time: 0.1241  memory: 3470  grad_norm: 13.4828  loss: 1.6670  loss_cls: 0.2787  loss_bbox: 0.7725  loss_centerness: 0.6158
+2026/11/19 02:52:34 - mmengine - INFO - Epoch(train)  [6][400/401]  base_lr: 1.1826e-03 lr: 1.1826e-03  eta: 1:42:38  time: 0.4207  data_time: 0.0898  memory: 3470  grad_norm: 13.8136  loss: 1.6915  loss_cls: 0.2927  loss_bbox: 0.7905  loss_centerness: 0.6083
+2026/11/19 02:52:35 - mmengine - INFO - Exp name: fcosaug_s2_20261119_023024
+2026/11/19 02:52:35 - mmengine - INFO - Saving checkpoint at 6 epochs
+2026/11/19 02:53:00 - mmengine - INFO - Epoch(val)  [6][50/92]    eta: 0:00:20  time: 0.4936  data_time: 0.4094  memory: 2632  
+2026/11/19 02:53:21 - mmengine - INFO - Evaluating bbox...
+2026/11/19 02:53:21 - mmengine - INFO - bbox_mAP_copypaste: 0.078 0.256 0.021 -1.000 0.000 0.088
+2026/11/19 02:53:21 - mmengine - INFO - Epoch(val) [6][92/92]    coco/bbox_mAP: 0.0780  coco/bbox_mAP_50: 0.2560  coco/bbox_mAP_75: 0.0210  coco/bbox_mAP_s: -1.0000  coco/bbox_mAP_m: 0.0000  coco/bbox_mAP_l: 0.0880  data_time: 0.4034  time: 0.4912
+2026/11/19 02:53:45 - mmengine - INFO - Epoch(train)  [7][ 50/401]  base_lr: 1.1797e-03 lr: 1.1797e-03  eta: 1:42:22  time: 0.5145  data_time: 0.1868  memory: 3470  grad_norm: 11.6922  loss: 1.3899  loss_cls: 0.2480  loss_bbox: 0.5522  loss_centerness: 0.5897
+2026/11/19 02:54:08 - mmengine - INFO - Epoch(train)  [7][100/401]  base_lr: 1.1769e-03 lr: 1.1769e-03  eta: 1:42:01  time: 0.4572  data_time: 0.1397  memory: 3470  grad_norm: 11.7607  loss: 1.5560  loss_cls: 0.3373  loss_bbox: 0.6088  loss_centerness: 0.6099
+2026/11/19 02:54:31 - mmengine - INFO - Epoch(train)  [7][150/401]  base_lr: 1.1740e-03 lr: 1.1740e-03  eta: 1:41:42  time: 0.4595  data_time: 0.1511  memory: 3470  grad_norm: 10.0403  loss: 1.4888  loss_cls: 0.2629  loss_bbox: 0.6235  loss_centerness: 0.6023
+2026/11/19 02:54:54 - mmengine - INFO - Epoch(train)  [7][200/401]  base_lr: 1.1711e-03 lr: 1.1711e-03  eta: 1:41:22  time: 0.4696  data_time: 0.1475  memory: 3470  grad_norm: 9.9300  loss: 1.4002  loss_cls: 0.2710  loss_bbox: 0.5295  loss_centerness: 0.5997
+2026/11/19 02:55:17 - mmengine - INFO - Epoch(train)  [7][250/401]  base_lr: 1.1681e-03 lr: 1.1681e-03  eta: 1:40:59  time: 0.4657  data_time: 0.1349  memory: 3470  grad_norm: 11.6673  loss: 1.6162  loss_cls: 0.2276  loss_bbox: 0.7637  loss_centerness: 0.6249
+2026/11/19 02:55:40 - mmengine - INFO - Epoch(train)  [7][300/401]  base_lr: 1.1650e-03 lr: 1.1650e-03  eta: 1:40:38  time: 0.4981  data_time: 0.1723  memory: 3470  grad_norm: 13.4767  loss: 1.7333  loss_cls: 0.3231  loss_bbox: 0.8048  loss_centerness: 0.6054
+2026/11/19 02:56:03 - mmengine - INFO - Epoch(train)  [7][350/401]  base_lr: 1.1619e-03 lr: 1.1619e-03  eta: 1:40:18  time: 0.4838  data_time: 0.1440  memory: 3470  grad_norm: 10.3848  loss: 1.4003  loss_cls: 0.2497  loss_bbox: 0.5428  loss_centerness: 0.6079
+2026/11/19 02:56:26 - mmengine - INFO - Epoch(train)  [7][400/401]  base_lr: 1.1588e-03 lr: 1.1588e-03  eta: 1:39:57  time: 0.4802  data_time: 0.1350  memory: 3470  grad_norm: 10.5369  loss: 1.4712  loss_cls: 0.2734  loss_bbox: 0.5948  loss_centerness: 0.6030
+2026/11/19 02:56:27 - mmengine - INFO - Exp name: fcosaug_s2_20261119_023024
+2026/11/19 02:56:27 - mmengine - INFO - Saving checkpoint at 7 epochs
+2026/11/19 02:56:52 - mmengine - INFO - Epoch(val)  [7][50/92]    eta: 0:00:20  time: 0.4962  data_time: 0.4079  memory: 2693  
+2026/11/19 02:57:14 - mmengine - INFO - Evaluating bbox...
+2026/11/19 02:57:14 - mmengine - INFO - bbox_mAP_copypaste: 0.176 0.559 0.036 -1.000 0.000 0.178
+2026/11/19 02:57:14 - mmengine - INFO - Epoch(val) [7][92/92]    coco/bbox_mAP: 0.1760  coco/bbox_mAP_50: 0.5590  coco/bbox_mAP_75: 0.0360  coco/bbox_mAP_s: -1.0000  coco/bbox_mAP_m: 0.0000  coco/bbox_mAP_l: 0.1780  data_time: 0.4074  time: 0.4975
+2026/11/19 02:57:38 - mmengine - INFO - Epoch(train)  [8][ 50/401]  base_lr: 1.1555e-03 lr: 1.1555e-03  eta: 1:39:40  time: 0.4599  data_time: 0.1256  memory: 3470  grad_norm: 11.3283  loss: 1.4646  loss_cls: 0.2648  loss_bbox: 0.6175  loss_centerness: 0.5823
+2026/11/19 02:58:01 - mmengine - INFO - Epoch(train)  [8][100/401]  base_lr: 1.1523e-03 lr: 1.1523e-03  eta: 1:39:18  time: 0.4756  data_time: 0.1498  memory: 3470  grad_norm: 8.7988  loss: 1.2890  loss_cls: 0.2349  loss_bbox: 0.4617  loss_centerness: 0.5924
+2026/11/19 02:58:24 - mmengine - INFO - Epoch(train)  [8][150/401]  base_lr: 1.1490e-03 lr: 1.1490e-03  eta: 1:38:57  time: 0.4730  data_time: 0.1786  memory: 3470  grad_norm: 13.0945  loss: 1.5365  loss_cls: 0.1790  loss_bbox: 0.7676  loss_centerness: 0.5899
+2026/11/19 02:58:43 - mmengine - INFO - Exp name: fcosaug_s2_20261119_023024
+2026/11/19 02:58:46 - mmengine - INFO - Epoch(train)  [8][200/401]  base_lr: 1.1456e-03 lr: 1.1456e-03  eta: 1:38:30  time: 0.4452  data_time: 0.1208  memory: 3470  grad_norm: 11.2636  loss: 1.4192  loss_cls: 0.2286  loss_bbox: 0.5980  loss_centerness: 0.5925
+2026/11/19 02:59:09 - mmengine - INFO - Epoch(train)  [8][250/401]  base_lr: 1.1422e-03 lr: 1.1422e-03  eta: 1:38:11  time: 0.4291  data_time: 0.1300  memory: 3470  grad_norm: 8.9735  loss: 1.3293  loss_cls: 0.1972  loss_bbox: 0.5163  loss_centerness: 0.6158
+2026/11/19 02:59:31 - mmengine - INFO - Epoch(train)  [8][300/401]  base_lr: 1.1388e-03 lr: 1.1388e-03  eta: 1:37:47  time: 0.4752  data_time: 0.1556  memory: 3470  grad_norm: 11.5693  loss: 1.3862  loss_cls: 0.2915  loss_bbox: 0.5027  loss_centerness: 0.5920
+2026/11/19 02:59:54 - mmengine - INFO - Epoch(train)  [8][350/401]  base_lr: 1.1353e-03 lr: 1.1353e-03  eta: 1:37:24  time: 0.4318  data_time: 0.1100  memory: 3470  grad_norm: 10.0306  loss: 1.3933  loss_cls: 0.2457  loss_bbox: 0.5510  loss_centerness: 0.5966
+2026/11/19 03:00:16 - mmengine - INFO - Epoch(train)  [8][400/401]  base_lr: 1.1318e-03 lr: 1.1318e-03  eta: 1:37:00  time: 0.4601  data_time: 0.1609  memory: 3470  grad_norm: 11.0274  loss: 1.5150  loss_cls: 0.2600  loss_bbox: 0.6532  loss_centerness: 0.6019
+2026/11/19 03:00:17 - mmengine - INFO - Exp name: fcosaug_s2_20261119_023024
+2026/11/19 03:00:17 - mmengine - INFO - Saving checkpoint at 8 epochs
+2026/11/19 03:00:42 - mmengine - INFO - Epoch(val)  [8][50/92]    eta: 0:00:20  time: 0.4964  data_time: 0.4085  memory: 3378  
+2026/11/19 03:01:03 - mmengine - INFO - Evaluating bbox...
+2026/11/19 03:01:03 - mmengine - INFO - bbox_mAP_copypaste: 0.039 0.239 0.001 -1.000 0.000 0.040
+2026/11/19 03:01:03 - mmengine - INFO - Epoch(val) [8][92/92]    coco/bbox_mAP: 0.0390  coco/bbox_mAP_50: 0.2390  coco/bbox_mAP_75: 0.0010  coco/bbox_mAP_s: -1.0000  coco/bbox_mAP_m: 0.0000  coco/bbox_mAP_l: 0.0400  data_time: 0.4016  time: 0.4894
+2026/11/19 03:01:27 - mmengine - INFO - Epoch(train)  [9][ 50/401]  base_lr: 1.1281e-03 lr: 1.1281e-03  eta: 1:36:41  time: 0.4525  data_time: 0.1344  memory: 3470  grad_norm: 11.2775  loss: 1.3076  loss_cls: 0.1944  loss_bbox: 0.5439  loss_centerness: 0.5693
+2026/11/19 03:01:49 - mmengine - INFO - Epoch(train)  [9][100/401]  base_lr: 1.1245e-03 lr: 1.1245e-03  eta: 1:36:16  time: 0.4443  data_time: 0.1364  memory: 3378  grad_norm: 12.6685  loss: 1.4181  loss_cls: 0.2355  loss_bbox: 0.5795  loss_centerness: 0.6031
+2026/11/19 03:02:11 - mmengine - INFO - Epoch(train)  [9][150/401]  base_lr: 1.1208e-03 lr: 1.1208e-03  eta: 1:35:51  time: 0.4338  data_time: 0.1223  memory: 3470  grad_norm: 10.9003  loss: 1.5153  loss_cls: 0.2677  loss_bbox: 0.6438  loss_centerness: 0.6037
+2026/11/19 03:02:33 - mmengine - INFO - Epoch(train)  [9][200/401]  base_lr: 1.1170e-03 lr: 1.1170e-03  eta: 1:35:27  time: 0.4316  data_time: 0.1067  memory: 3470  grad_norm: 10.2210  loss: 1.3700  loss_cls: 0.2716  loss_bbox: 0.4979  loss_centerness: 0.6004
+2026/11/19 03:02:55 - mmengine - INFO - Epoch(train)  [9][250/401]  base_lr: 1.1132e-03 lr: 1.1132e-03  eta: 1:35:01  time: 0.4480  data_time: 0.1356  memory: 3470  grad_norm: 11.2937  loss: 1.2709  loss_cls: 0.2312  loss_bbox: 0.4537  loss_centerness: 0.5859
+2026/11/19 03:03:18 - mmengine - INFO - Epoch(train)  [9][300/401]  base_lr: 1.1094e-03 lr: 1.1094e-03  eta: 1:34:40  time: 0.4661  data_time: 0.1228  memory: 3470  grad_norm: 9.6704  loss: 1.2377  loss_cls: 0.2202  loss_bbox: 0.4231  loss_centerness: 0.5944
+2026/11/19 03:03:41 - mmengine - INFO - Epoch(train)  [9][350/401]  base_lr: 1.1055e-03 lr: 1.1055e-03  eta: 1:34:17  time: 0.4356  data_time: 0.1113  memory: 3470  grad_norm: 8.3920  loss: 1.3492  loss_cls: 0.2413  loss_bbox: 0.4949  loss_centerness: 0.6129
+2026/11/19 03:04:04 - mmengine - INFO - Epoch(train)  [9][400/401]  base_lr: 1.1016e-03 lr: 1.1016e-03  eta: 1:33:54  time: 0.4346  data_time: 0.0852  memory: 3470  grad_norm: 10.8038  loss: 1.5128  loss_cls: 0.2500  loss_bbox: 0.6689  loss_centerness: 0.5939
+2026/11/19 03:04:04 - mmengine - INFO - Exp name: fcosaug_s2_20261119_023024
+2026/11/19 03:04:04 - mmengine - INFO - Saving checkpoint at 9 epochs
+2026/11/19 03:04:29 - mmengine - INFO - Epoch(val)  [9][50/92]    eta: 0:00:20  time: 0.5059  data_time: 0.4114  memory: 2693  
+2026/11/19 03:04:50 - mmengine - INFO - Evaluating bbox...
+2026/11/19 03:04:51 - mmengine - INFO - bbox_mAP_copypaste: 0.015 0.053 0.003 -1.000 0.000 0.015
+2026/11/19 03:04:51 - mmengine - INFO - Epoch(val) [9][92/92]    coco/bbox_mAP: 0.0150  coco/bbox_mAP_50: 0.0530  coco/bbox_mAP_75: 0.0030  coco/bbox_mAP_s: -1.0000  coco/bbox_mAP_m: 0.0000  coco/bbox_mAP_l: 0.0150  data_time: 0.4025  time: 0.4902
+2026/11/19 03:05:13 - mmengine - INFO - Epoch(train) [10][ 50/401]  base_lr: 1.0976e-03 lr: 1.0976e-03  eta: 1:33:32  time: 0.4287  data_time: 0.1122  memory: 3470  grad_norm: 10.4946  loss: 1.2913  loss_cls: 0.2258  loss_bbox: 0.4780  loss_centerness: 0.5875
+2026/11/19 03:05:36 - mmengine - INFO - Epoch(train) [10][100/401]  base_lr: 1.0936e-03 lr: 1.0936e-03  eta: 1:33:10  time: 0.4887  data_time: 0.1773  memory: 3470  grad_norm: 9.5379  loss: 1.3852  loss_cls: 0.2337  loss_bbox: 0.5490  loss_centerness: 0.6025
+2026/11/19 03:05:58 - mmengine - INFO - Epoch(train) [10][150/401]  base_lr: 1.0895e-03 lr: 1.0895e-03  eta: 1:32:46  time: 0.4492  data_time: 0.1315  memory: 3470  grad_norm: 10.3080  loss: 1.4723  loss_cls: 0.2784  loss_bbox: 0.5869  loss_centerness: 0.6070
+2026/11/19 03:06:21 - mmengine - INFO - Epoch(train) [10][200/401]  base_lr: 1.0854e-03 lr: 1.0854e-03  eta: 1:32:22  time: 0.4423  data_time: 0.1069  memory: 3470  grad_norm: 11.6162  loss: 1.5050  loss_cls: 0.3377  loss_bbox: 0.5662  loss_centerness: 0.6011
+2026/11/19 03:06:42 - mmengine - INFO - Epoch(train) [10][250/401]  base_lr: 1.0813e-03 lr: 1.0813e-03  eta: 1:31:56  time: 0.4259  data_time: 0.0974  memory: 3470  grad_norm: 10.3355  loss: 1.3051  loss_cls: 0.1847  loss_bbox: 0.5493  loss_centerness: 0.5711
+2026/11/19 03:07:05 - mmengine - INFO - Epoch(train) [10][300/401]  base_lr: 1.0771e-03 lr: 1.0771e-03  eta: 1:31:34  time: 0.4711  data_time: 0.1780  memory: 3470  grad_norm: 10.5317  loss: 1.5858  loss_cls: 0.2244  loss_bbox: 0.7842  loss_centerness: 0.5773
+2026/11/19 03:07:28 - mmengine - INFO - Epoch(train) [10][350/401]  base_lr: 1.0729e-03 lr: 1.0729e-03  eta: 1:31:11  time: 0.4466  data_time: 0.1323  memory: 3470  grad_norm: 11.3790  loss: 1.6350  loss_cls: 0.2752  loss_bbox: 0.7566  loss_centerness: 0.6032
+2026/11/19 03:07:46 - mmengine - INFO - Exp name: fcosaug_s2_20261119_023024
+2026/11/19 03:07:50 - mmengine - INFO - Epoch(train) [10][400/401]  base_lr: 1.0686e-03 lr: 1.0686e-03  eta: 1:30:47  time: 0.4794  data_time: 0.1363  memory: 3470  grad_norm: 8.6743  loss: 1.2225  loss_cls: 0.2104  loss_bbox: 0.4177  loss_centerness: 0.5944
+2026/11/19 03:07:51 - mmengine - INFO - Exp name: fcosaug_s2_20261119_023024
+2026/11/19 03:07:51 - mmengine - INFO - Saving checkpoint at 10 epochs
+2026/11/19 03:08:16 - mmengine - INFO - Epoch(val) [10][50/92]    eta: 0:00:20  time: 0.4920  data_time: 0.4037  memory: 2542  
+2026/11/19 03:08:37 - mmengine - INFO - Evaluating bbox...
+2026/11/19 03:08:37 - mmengine - INFO - bbox_mAP_copypaste: 0.293 0.708 0.177 -1.000 0.050 0.296
+2026/11/19 03:08:37 - mmengine - INFO - Epoch(val) [10][92/92]    coco/bbox_mAP: 0.2930  coco/bbox_mAP_50: 0.7080  coco/bbox_mAP_75: 0.1770  coco/bbox_mAP_s: -1.0000  coco/bbox_mAP_m: 0.0500  coco/bbox_mAP_l: 0.2960  data_time: 0.4033  time: 0.4929
+2026/11/19 03:08:37 - mmengine - INFO - The previous best checkpoint C:\Users\rl-sa\TCC\tcc-rafael\work_dirs\sementes\fcosaug_s2\best_coco_bbox_mAP_50_epoch_4.pth is removed
+2026/11/19 03:08:38 - mmengine - INFO - The best checkpoint with 0.7080 coco/bbox_mAP_50 at 10 epoch is saved to best_coco_bbox_mAP_50_epoch_10.pth.
+2026/11/19 03:09:02 - mmengine - INFO - Epoch(train) [11][ 50/401]  base_lr: 1.0642e-03 lr: 1.0642e-03  eta: 1:30:25  time: 0.4613  data_time: 0.1292  memory: 3470  grad_norm: 10.6888  loss: 1.3172  loss_cls: 0.2062  loss_bbox: 0.5281  loss_centerness: 0.5829
+2026/11/19 03:09:24 - mmengine - INFO - Epoch(train) [11][100/401]  base_lr: 1.0598e-03 lr: 1.0598e-03  eta: 1:30:01  time: 0.4601  data_time: 0.1573  memory: 3470  grad_norm: 8.7327  loss: 1.2067  loss_cls: 0.1930  loss_bbox: 0.4431  loss_centerness: 0.5706
+2026/11/19 03:09:47 - mmengine - INFO - Epoch(train) [11][150/401]  base_lr: 1.0554e-03 lr: 1.0554e-03  eta: 1:29:38  time: 0.4628  data_time: 0.1484  memory: 3470  grad_norm: 12.4785  loss: 1.5716  loss_cls: 0.2508  loss_bbox: 0.7174  loss_centerness: 0.6033
+2026/11/19 03:10:09 - mmengine - INFO - Epoch(train) [11][200/401]  base_lr: 1.0510e-03 lr: 1.0510e-03  eta: 1:29:15  time: 0.4289  data_time: 0.1141  memory: 3470  grad_norm: 11.8233  loss: 1.3762  loss_cls: 0.2814  loss_bbox: 0.4884  loss_centerness: 0.6064
+2026/11/19 03:10:32 - mmengine - INFO - Epoch(train) [11][250/401]  base_lr: 1.0465e-03 lr: 1.0465e-03  eta: 1:28:53  time: 0.4606  data_time: 0.1344  memory: 3470  grad_norm: 10.7300  loss: 1.3371  loss_cls: 0.1940  loss_bbox: 0.5472  loss_centerness: 0.5960
+2026/11/19 03:10:54 - mmengine - INFO - Epoch(train) [11][300/401]  base_lr: 1.0420e-03 lr: 1.0420e-03  eta: 1:28:29  time: 0.4128  data_time: 0.1084  memory: 3470  grad_norm: 9.3599  loss: 1.2449  loss_cls: 0.1868  loss_bbox: 0.4578  loss_centerness: 0.6003
+2026/11/19 03:11:16 - mmengine - INFO - Epoch(train) [11][350/401]  base_lr: 1.0375e-03 lr: 1.0375e-03  eta: 1:28:06  time: 0.4347  data_time: 0.1054  memory: 3470  grad_norm: 9.9191  loss: 1.4033  loss_cls: 0.2372  loss_bbox: 0.5519  loss_centerness: 0.6142
+2026/11/19 03:11:38 - mmengine - INFO - Epoch(train) [11][400/401]  base_lr: 1.0329e-03 lr: 1.0329e-03  eta: 1:27:41  time: 0.4329  data_time: 0.0926  memory: 3470  grad_norm: 10.6762  loss: 1.2842  loss_cls: 0.2180  loss_bbox: 0.4758  loss_centerness: 0.5903
+2026/11/19 03:11:39 - mmengine - INFO - Exp name: fcosaug_s2_20261119_023024
+2026/11/19 03:11:39 - mmengine - INFO - Saving checkpoint at 11 epochs
+2026/11/19 03:12:04 - mmengine - INFO - Epoch(val) [11][50/92]    eta: 0:00:20  time: 0.4963  data_time: 0.4093  memory: 1917  
+2026/11/19 03:12:25 - mmengine - INFO - Evaluating bbox...
+2026/11/19 03:12:25 - mmengine - INFO - bbox_mAP_copypaste: 0.207 0.670 0.062 -1.000 0.100 0.209
+2026/11/19 03:12:25 - mmengine - INFO - Epoch(val) [11][92/92]    coco/bbox_mAP: 0.2070  coco/bbox_mAP_50: 0.6700  coco/bbox_mAP_75: 0.0620  coco/bbox_mAP_s: -1.0000  coco/bbox_mAP_m: 0.1000  coco/bbox_mAP_l: 0.2090  data_time: 0.4048  time: 0.4923
+2026/11/19 03:12:48 - mmengine - INFO - Epoch(train) [12][ 50/401]  base_lr: 1.0281e-03 lr: 1.0281e-03  eta: 1:27:19  time: 0.4450  data_time: 0.1420  memory: 3378  grad_norm: 9.3051  loss: 1.3274  loss_cls: 0.2459  loss_bbox: 0.4821  loss_centerness: 0.5994
+2026/11/19 03:13:10 - mmengine - INFO - Epoch(train) [12][100/401]  base_lr: 1.0235e-03 lr: 1.0235e-03  eta: 1:26:54  time: 0.4241  data_time: 0.1010  memory: 3470  grad_norm: 10.2833  loss: 1.2717  loss_cls: 0.2414  loss_bbox: 0.4280  loss_centerness: 0.6024
+2026/11/19 03:13:32 - mmengine - INFO - Epoch(train) [12][150/401]  base_lr: 1.0187e-03 lr: 1.0187e-03  eta: 1:26:30  time: 0.4170  data_time: 0.0808  memory: 3378  grad_norm: 9.0599  loss: 1.2087  loss_cls: 0.2096  loss_bbox: 0.4082  loss_centerness: 0.5909
+2026/11/19 03:13:55 - mmengine - INFO - Epoch(train) [12][200/401]  base_lr: 1.0140e-03 lr: 1.0140e-03  eta: 1:26:07  time: 0.4542  data_time: 0.1376  memory: 3358  grad_norm: 10.0509  loss: 1.1721  loss_cls: 0.1815  loss_bbox: 0.3902  loss_centerness: 0.6004
+2026/11/19 03:14:17 - mmengine - INFO - Epoch(train) [12][250/401]  base_lr: 1.0092e-03 lr: 1.0092e-03  eta: 1:25:45  time: 0.4636  data_time: 0.1410  memory: 3470  grad_norm: 10.2056  loss: 1.2671  loss_cls: 0.2260  loss_bbox: 0.4450  loss_centerness: 0.5961
+2026/11/19 03:14:40 - mmengine - INFO - Epoch(train) [12][300/401]  base_lr: 1.0044e-03 lr: 1.0044e-03  eta: 1:25:21  time: 0.4400  data_time: 0.1219  memory: 3470  grad_norm: 9.9277  loss: 1.3218  loss_cls: 0.2217  loss_bbox: 0.4971  loss_centerness: 0.6029
+2026/11/19 03:15:02 - mmengine - INFO - Epoch(train) [12][350/401]  base_lr: 9.9954e-04 lr: 9.9954e-04  eta: 1:24:58  time: 0.4376  data_time: 0.0964  memory: 3470  grad_norm: 9.1413  loss: 1.2003  loss_cls: 0.2153  loss_bbox: 0.4028  loss_centerness: 0.5822
+2026/11/19 03:15:24 - mmengine - INFO - Epoch(train) [12][400/401]  base_lr: 9.9464e-04 lr: 9.9464e-04  eta: 1:24:35  time: 0.4298  data_time: 0.1047  memory: 3470  grad_norm: 11.2029  loss: 1.4026  loss_cls: 0.2985  loss_bbox: 0.5048  loss_centerness: 0.5992
+2026/11/19 03:15:24 - mmengine - INFO - Exp name: fcosaug_s2_20261119_023024
+2026/11/19 03:15:24 - mmengine - INFO - Saving checkpoint at 12 epochs
+2026/11/19 03:15:50 - mmengine - INFO - Epoch(val) [12][50/92]    eta: 0:00:20  time: 0.4900  data_time: 0.4069  memory: 2693  
+2026/11/19 03:16:11 - mmengine - INFO - Evaluating bbox...
+2026/11/19 03:16:11 - mmengine - INFO - bbox_mAP_copypaste: 0.335 0.741 0.258 -1.000 0.078 0.339
+2026/11/19 03:16:11 - mmengine - INFO - Epoch(val) [12][92/92]    coco/bbox_mAP: 0.3350  coco/bbox_mAP_50: 0.7410  coco/bbox_mAP_75: 0.2580  coco/bbox_mAP_s: -1.0000  coco/bbox_mAP_m: 0.0780  coco/bbox_mAP_l: 0.3390  data_time: 0.4033  time: 0.4892
+2026/11/19 03:16:11 - mmengine - INFO - The previous best checkpoint C:\Users\rl-sa\TCC\tcc-rafael\work_dirs\sementes\fcosaug_s2\best_coco_bbox_mAP_50_epoch_10.pth is removed
+2026/11/19 03:16:11 - mmengine - INFO - The best checkpoint with 0.7410 coco/bbox_mAP_50 at 12 epoch is saved to best_coco_bbox_mAP_50_epoch_12.pth.
+2026/11/19 03:16:36 - mmengine - INFO - Epoch(train) [13][ 50/401]  base_lr: 9.8961e-04 lr: 9.8961e-04  eta: 1:24:13  time: 0.4666  data_time: 0.1510  memory: 3378  grad_norm: 9.6197  loss: 1.2699  loss_cls: 0.1905  loss_bbox: 0.4727  loss_centerness: 0.6067
+2026/11/19 03:16:58 - mmengine - INFO - Epoch(train) [13][100/401]  base_lr: 9.8465e-04 lr: 9.8465e-04  eta: 1:23:49  time: 0.4472  data_time: 0.1365  memory: 3378  grad_norm: 9.2466  loss: 1.2002  loss_cls: 0.2097  loss_bbox: 0.4094  loss_centerness: 0.5811
+2026/11/19 03:17:20 - mmengine - INFO - Epoch(train) [13][150/401]  base_lr: 9.7965e-04 lr: 9.7965e-04  eta: 1:23:26  time: 0.4606  data_time: 0.1521  memory: 3470  grad_norm: 10.8930  loss: 1.4155  loss_cls: 0.2619  loss_bbox: 0.5548  loss_centerness: 0.5989
+2026/11/19 03:17:37 - mmengine - INFO - Exp name: fcosaug_s2_20261119_023024
+2026/11/19 03:17:43 - mmengine - INFO - Epoch(train) [13][200/401]  base_lr: 9.7462e-04 lr: 9.7462e-04  eta: 1:23:02  time: 0.4694  data_time: 0.1369  memory: 3470  grad_norm: 9.2194  loss: 1.2156  loss_cls: 0.1810  loss_bbox: 0.4424  loss_centerness: 0.5923
+2026/11/19 03:18:04 - mmengine - INFO - Epoch(train) [13][250/401]  base_lr: 9.6956e-04 lr: 9.6956e-04  eta: 1:22:38  time: 0.4272  data_time: 0.0962  memory: 3470  grad_norm: 9.4291  loss: 1.3232  loss_cls: 0.2425  loss_bbox: 0.4647  loss_centerness: 0.6160
+2026/11/19 03:18:26 - mmengine - INFO - Epoch(train) [13][300/401]  base_lr: 9.6446e-04 lr: 9.6446e-04  eta: 1:22:14  time: 0.4272  data_time: 0.1150  memory: 3470  grad_norm: 9.4368  loss: 1.2539  loss_cls: 0.2013  loss_bbox: 0.4506  loss_centerness: 0.6020
+2026/11/19 03:18:49 - mmengine - INFO - Epoch(train) [13][350/401]  base_lr: 9.5933e-04 lr: 9.5933e-04  eta: 1:21:51  time: 0.4731  data_time: 0.1162  memory: 3470  grad_norm: 11.2860  loss: 1.3035  loss_cls: 0.2039  loss_bbox: 0.4962  loss_centerness: 0.6034
+2026/11/19 03:19:11 - mmengine - INFO - Epoch(train) [13][400/401]  base_lr: 9.5417e-04 lr: 9.5417e-04  eta: 1:21:27  time: 0.4614  data_time: 0.1668  memory: 3470  grad_norm: 9.1132  loss: 1.2826  loss_cls: 0.2313  loss_bbox: 0.4379  loss_centerness: 0.6135
+2026/11/19 03:19:11 - mmengine - INFO - Exp name: fcosaug_s2_20261119_023024
+2026/11/19 03:19:11 - mmengine - INFO - Saving checkpoint at 13 epochs
+2026/11/19 03:19:36 - mmengine - INFO - Epoch(val) [13][50/92]    eta: 0:00:20  time: 0.5053  data_time: 0.4103  memory: 2481  
+2026/11/19 03:19:57 - mmengine - INFO - Evaluating bbox...
+2026/11/19 03:19:58 - mmengine - INFO - bbox_mAP_copypaste: 0.220 0.694 0.040 -1.000 0.000 0.223
+2026/11/19 03:19:58 - mmengine - INFO - Epoch(val) [13][92/92]    coco/bbox_mAP: 0.2200  coco/bbox_mAP_50: 0.6940  coco/bbox_mAP_75: 0.0400  coco/bbox_mAP_s: -1.0000  coco/bbox_mAP_m: 0.0000  coco/bbox_mAP_l: 0.2230  data_time: 0.4038  time: 0.4926
+2026/11/19 03:20:21 - mmengine - INFO - Epoch(train) [14][ 50/401]  base_lr: 9.4888e-04 lr: 9.4888e-04  eta: 1:21:05  time: 0.4827  data_time: 0.1429  memory: 3470  grad_norm: 11.0583  loss: 1.2583  loss_cls: 0.2212  loss_bbox: 0.4470  loss_centerness: 0.5900
+2026/11/19 03:20:43 - mmengine - INFO - Epoch(train) [14][100/401]  base_lr: 9.4366e-04 lr: 9.4366e-04  eta: 1:20:42  time: 0.4568  data_time: 0.1076  memory: 3470  grad_norm: 10.8070  loss: 1.3092  loss_cls: 0.2340  loss_bbox: 0.4887  loss_centerness: 0.5865
+2026/11/19 03:21:05 - mmengine - INFO - Epoch(train) [14][150/401]  base_lr: 9.3840e-04 lr: 9.3840e-04  eta: 1:20:18  time: 0.4367  data_time: 0.1094  memory: 3470  grad_norm: 12.3517  loss: 1.3073  loss_cls: 0.1766  loss_bbox: 0.5325  loss_centerness: 0.5982
+2026/11/19 03:21:27 - mmengine - INFO - Epoch(train) [14][200/401]  base_lr: 9.3312e-04 lr: 9.3312e-04  eta: 1:19:53  time: 0.4500  data_time: 0.1193  memory: 3358  grad_norm: 8.8182  loss: 1.2441  loss_cls: 0.1999  loss_bbox: 0.4393  loss_centerness: 0.6049
+2026/11/19 03:21:48 - mmengine - INFO - Epoch(train) [14][250/401]  base_lr: 9.2781e-04 lr: 9.2781e-04  eta: 1:19:28  time: 0.4512  data_time: 0.1176  memory: 3470  grad_norm: 11.4848  loss: 1.2277  loss_cls: 0.2567  loss_bbox: 0.3873  loss_centerness: 0.5837
+2026/11/19 03:22:10 - mmengine - INFO - Epoch(train) [14][300/401]  base_lr: 9.2247e-04 lr: 9.2247e-04  eta: 1:19:05  time: 0.4324  data_time: 0.1181  memory: 3470  grad_norm: 9.9451  loss: 1.2690  loss_cls: 0.2378  loss_bbox: 0.4449  loss_centerness: 0.5863
+2026/11/19 03:22:32 - mmengine - INFO - Epoch(train) [14][350/401]  base_lr: 9.1710e-04 lr: 9.1710e-04  eta: 1:18:42  time: 0.4331  data_time: 0.1292  memory: 3470  grad_norm: 10.2584  loss: 1.2331  loss_cls: 0.2014  loss_bbox: 0.4425  loss_centerness: 0.5892
+2026/11/19 03:22:54 - mmengine - INFO - Epoch(train) [14][400/401]  base_lr: 9.1171e-04 lr: 9.1171e-04  eta: 1:18:19  time: 0.4404  data_time: 0.1189  memory: 3470  grad_norm: 8.2238  loss: 1.1705  loss_cls: 0.1685  loss_bbox: 0.4084  loss_centerness: 0.5936
+2026/11/19 03:22:55 - mmengine - INFO - Exp name: fcosaug_s2_20261119_023024
+2026/11/19 03:22:55 - mmengine - INFO - Saving checkpoint at 14 epochs
+2026/11/19 03:23:20 - mmengine - INFO - Epoch(val) [14][50/92]    eta: 0:00:20  time: 0.4918  data_time: 0.4057  memory: 2481  
+2026/11/19 03:23:41 - mmengine - INFO - Evaluating bbox...
+2026/11/19 03:23:41 - mmengine - INFO - bbox_mAP_copypaste: 0.261 0.699 0.071 -1.000 0.000 0.264
+2026/11/19 03:23:41 - mmengine - INFO - Epoch(val) [14][92/92]    coco/bbox_mAP: 0.2610  coco/bbox_mAP_50: 0.6990  coco/bbox_mAP_75: 0.0710  coco/bbox_mAP_s: -1.0000  coco/bbox_mAP_m: 0.0000  coco/bbox_mAP_l: 0.2640  data_time: 0.4039  time: 0.4914
+2026/11/19 03:24:04 - mmengine - INFO - Epoch(train) [15][ 50/401]  base_lr: 9.0618e-04 lr: 9.0618e-04  eta: 1:17:56  time: 0.4439  data_time: 0.1264  memory: 3470  grad_norm: 10.1435  loss: 1.1652  loss_cls: 0.1825  loss_bbox: 0.3997  loss_centerness: 0.5830
+2026/11/19 03:24:27 - mmengine - INFO - Epoch(train) [15][100/401]  base_lr: 9.0073e-04 lr: 9.0073e-04  eta: 1:17:34  time: 0.4589  data_time: 0.1236  memory: 3470  grad_norm: 10.3016  loss: 1.2364  loss_cls: 0.2099  loss_bbox: 0.4365  loss_centerness: 0.5900
+2026/11/19 03:24:49 - mmengine - INFO - Epoch(train) [15][150/401]  base_lr: 8.9525e-04 lr: 8.9525e-04  eta: 1:17:11  time: 0.4287  data_time: 0.0812  memory: 3470  grad_norm: 10.0275  loss: 1.2060  loss_cls: 0.1914  loss_bbox: 0.4200  loss_centerness: 0.5946
+2026/11/19 03:25:11 - mmengine - INFO - Epoch(train) [15][200/401]  base_lr: 8.8975e-04 lr: 8.8975e-04  eta: 1:16:48  time: 0.4414  data_time: 0.1114  memory: 3470  grad_norm: 12.9975  loss: 1.3523  loss_cls: 0.2350  loss_bbox: 0.5184  loss_centerness: 0.5988
+2026/11/19 03:25:33 - mmengine - INFO - Epoch(train) [15][250/401]  base_lr: 8.8423e-04 lr: 8.8423e-04  eta: 1:16:24  time: 0.4220  data_time: 0.1368  memory: 3470  grad_norm: 12.0160  loss: 1.2992  loss_cls: 0.2516  loss_bbox: 0.4434  loss_centerness: 0.6043
+2026/11/19 03:25:56 - mmengine - INFO - Epoch(train) [15][300/401]  base_lr: 8.7868e-04 lr: 8.7868e-04  eta: 1:16:02  time: 0.4570  data_time: 0.1692  memory: 3470  grad_norm: 10.1253  loss: 1.1965  loss_cls: 0.2098  loss_bbox: 0.4037  loss_centerness: 0.5830
+2026/11/19 03:26:18 - mmengine - INFO - Epoch(train) [15][350/401]  base_lr: 8.7310e-04 lr: 8.7310e-04  eta: 1:15:38  time: 0.4142  data_time: 0.0996  memory: 3470  grad_norm: 9.7374  loss: 1.1347  loss_cls: 0.1673  loss_bbox: 0.3885  loss_centerness: 0.5788
+2026/11/19 03:26:34 - mmengine - INFO - Exp name: fcosaug_s2_20261119_023024
+2026/11/19 03:26:40 - mmengine - INFO - Epoch(train) [15][400/401]  base_lr: 8.6750e-04 lr: 8.6750e-04  eta: 1:15:15  time: 0.4606  data_time: 0.1759  memory: 3470  grad_norm: 10.6909  loss: 1.2816  loss_cls: 0.2094  loss_bbox: 0.4708  loss_centerness: 0.6014
+2026/11/19 03:26:40 - mmengine - INFO - Exp name: fcosaug_s2_20261119_023024
+2026/11/19 03:26:40 - mmengine - INFO - Saving checkpoint at 15 epochs
+2026/11/19 03:27:05 - mmengine - INFO - Epoch(val) [15][50/92]    eta: 0:00:20  time: 0.4986  data_time: 0.4077  memory: 2515  
+2026/11/19 03:27:27 - mmengine - INFO - Evaluating bbox...
+2026/11/19 03:27:27 - mmengine - INFO - bbox_mAP_copypaste: 0.177 0.505 0.061 -1.000 0.003 0.181
+2026/11/19 03:27:27 - mmengine - INFO - Epoch(val) [15][92/92]    coco/bbox_mAP: 0.1770  coco/bbox_mAP_50: 0.5050  coco/bbox_mAP_75: 0.0610  coco/bbox_mAP_s: -1.0000  coco/bbox_mAP_m: 0.0030  coco/bbox_mAP_l: 0.1810  data_time: 0.4047  time: 0.4924
+2026/11/19 03:27:50 - mmengine - INFO - Epoch(train) [16][ 50/401]  base_lr: 8.6177e-04 lr: 8.6177e-04  eta: 1:14:52  time: 0.4524  data_time: 0.1313  memory: 3470  grad_norm: 8.4495  loss: 1.1972  loss_cls: 0.1832  loss_bbox: 0.4152  loss_centerness: 0.5988
+2026/11/19 03:28:12 - mmengine - INFO - Epoch(train) [16][100/401]  base_lr: 8.5613e-04 lr: 8.5613e-04  eta: 1:14:29  time: 0.4433  data_time: 0.1464  memory: 3470  grad_norm: 9.6029  loss: 1.1813  loss_cls: 0.1911  loss_bbox: 0.3939  loss_centerness: 0.5963
+2026/11/19 03:28:34 - mmengine - INFO - Epoch(train) [16][150/401]  base_lr: 8.5046e-04 lr: 8.5046e-04  eta: 1:14:06  time: 0.4180  data_time: 0.1421  memory: 3470  grad_norm: 11.5819  loss: 1.1673  loss_cls: 0.1642  loss_bbox: 0.4122  loss_centerness: 0.5908
+2026/11/19 03:28:57 - mmengine - INFO - Epoch(train) [16][200/401]  base_lr: 8.4478e-04 lr: 8.4478e-04  eta: 1:13:44  time: 0.4133  data_time: 0.1094  memory: 3470  grad_norm: 8.5711  loss: 1.1103  loss_cls: 0.1713  loss_bbox: 0.3642  loss_centerness: 0.5749
+2026/11/19 03:29:19 - mmengine - INFO - Epoch(train) [16][250/401]  base_lr: 8.3907e-04 lr: 8.3907e-04  eta: 1:13:21  time: 0.4642  data_time: 0.1707  memory: 3470  grad_norm: 12.5194  loss: 1.3442  loss_cls: 0.2101  loss_bbox: 0.5469  loss_centerness: 0.5871
+2026/11/19 03:29:41 - mmengine - INFO - Epoch(train) [16][300/401]  base_lr: 8.3335e-04 lr: 8.3335e-04  eta: 1:12:58  time: 0.4472  data_time: 0.1007  memory: 3470  grad_norm: 10.0139  loss: 1.1231  loss_cls: 0.1743  loss_bbox: 0.3702  loss_centerness: 0.5786
+2026/11/19 03:30:05 - mmengine - INFO - Epoch(train) [16][350/401]  base_lr: 8.2760e-04 lr: 8.2760e-04  eta: 1:12:37  time: 0.4378  data_time: 0.1313  memory: 3470  grad_norm: 9.9568  loss: 1.1937  loss_cls: 0.1854  loss_bbox: 0.4198  loss_centerness: 0.5885
+2026/11/19 03:30:27 - mmengine - INFO - Epoch(train) [16][400/401]  base_lr: 8.2184e-04 lr: 8.2184e-04  eta: 1:12:13  time: 0.4441  data_time: 0.1551  memory: 3470  grad_norm: 10.6902  loss: 1.2219  loss_cls: 0.2033  loss_bbox: 0.4412  loss_centerness: 0.5775
+2026/11/19 03:30:27 - mmengine - INFO - Exp name: fcosaug_s2_20261119_023024
+2026/11/19 03:30:27 - mmengine - INFO - Saving checkpoint at 16 epochs
+2026/11/19 03:30:53 - mmengine - INFO - Epoch(val) [16][50/92]    eta: 0:00:20  time: 0.4867  data_time: 0.4026  memory: 2693  
+2026/11/19 03:31:14 - mmengine - INFO - Evaluating bbox...
+2026/11/19 03:31:14 - mmengine - INFO - bbox_mAP_copypaste: 0.350 0.747 0.237 -1.000 0.011 0.355
+2026/11/19 03:31:14 - mmengine - INFO - Epoch(val) [16][92/92]    coco/bbox_mAP: 0.3500  coco/bbox_mAP_50: 0.7470  coco/bbox_mAP_75: 0.2370  coco/bbox_mAP_s: -1.0000  coco/bbox_mAP_m: 0.0110  coco/bbox_mAP_l: 0.3550  data_time: 0.4025  time: 0.4905
+2026/11/19 03:31:14 - mmengine - INFO - The previous best checkpoint C:\Users\rl-sa\TCC\tcc-rafael\work_dirs\sementes\fcosaug_s2\best_coco_bbox_mAP_50_epoch_12.pth is removed
+2026/11/19 03:31:14 - mmengine - INFO - The best checkpoint with 0.7470 coco/bbox_mAP_50 at 16 epoch is saved to best_coco_bbox_mAP_50_epoch_16.pth.
+2026/11/19 03:31:38 - mmengine - INFO - Epoch(train) [17][ 50/401]  base_lr: 8.1594e-04 lr: 8.1594e-04  eta: 1:11:51  time: 0.4599  data_time: 0.1171  memory: 3470  grad_norm: 13.0153  loss: 1.3283  loss_cls: 0.1894  loss_bbox: 0.5562  loss_centerness: 0.5827
+2026/11/19 03:32:00 - mmengine - INFO - Epoch(train) [17][100/401]  base_lr: 8.1014e-04 lr: 8.1014e-04  eta: 1:11:28  time: 0.4354  data_time: 0.1214  memory: 3470  grad_norm: 11.4832  loss: 1.2605  loss_cls: 0.2132  loss_bbox: 0.4469  loss_centerness: 0.6004
+2026/11/19 03:32:23 - mmengine - INFO - Epoch(train) [17][150/401]  base_lr: 8.0432e-04 lr: 8.0432e-04  eta: 1:11:06  time: 0.4592  data_time: 0.1324  memory: 3470  grad_norm: 8.8083  loss: 1.2889  loss_cls: 0.2203  loss_bbox: 0.4962  loss_centerness: 0.5724
+2026/11/19 03:32:45 - mmengine - INFO - Epoch(train) [17][200/401]  base_lr: 7.9848e-04 lr: 7.9848e-04  eta: 1:10:43  time: 0.4501  data_time: 0.0989  memory: 3470  grad_norm: 9.8259  loss: 1.2940  loss_cls: 0.1798  loss_bbox: 0.5194  loss_centerness: 0.5948
+2026/11/19 03:33:08 - mmengine - INFO - Epoch(train) [17][250/401]  base_lr: 7.9263e-04 lr: 7.9263e-04  eta: 1:10:21  time: 0.4425  data_time: 0.1300  memory: 3470  grad_norm: 10.3362  loss: 1.1469  loss_cls: 0.1567  loss_bbox: 0.4211  loss_centerness: 0.5691
+2026/11/19 03:33:30 - mmengine - INFO - Epoch(train) [17][300/401]  base_lr: 7.8677e-04 lr: 7.8677e-04  eta: 1:09:58  time: 0.4053  data_time: 0.0760  memory: 3470  grad_norm: 12.2306  loss: 1.2960  loss_cls: 0.2040  loss_bbox: 0.5103  loss_centerness: 0.5818
+2026/11/19 03:33:53 - mmengine - INFO - Epoch(train) [17][350/401]  base_lr: 7.8088e-04 lr: 7.8088e-04  eta: 1:09:36  time: 0.4742  data_time: 0.1456  memory: 3470  grad_norm: 10.5032  loss: 1.2364  loss_cls: 0.2193  loss_bbox: 0.4243  loss_centerness: 0.5928
+2026/11/19 03:34:15 - mmengine - INFO - Epoch(train) [17][400/401]  base_lr: 7.7499e-04 lr: 7.7499e-04  eta: 1:09:13  time: 0.4278  data_time: 0.1195  memory: 3470  grad_norm: 7.8352  loss: 1.0932  loss_cls: 0.1452  loss_bbox: 0.3621  loss_centerness: 0.5860
+2026/11/19 03:34:16 - mmengine - INFO - Exp name: fcosaug_s2_20261119_023024
+2026/11/19 03:34:16 - mmengine - INFO - Saving checkpoint at 17 epochs
+2026/11/19 03:34:41 - mmengine - INFO - Epoch(val) [17][50/92]    eta: 0:00:20  time: 0.5009  data_time: 0.4101  memory: 2771  
+2026/11/19 03:35:02 - mmengine - INFO - Evaluating bbox...
+2026/11/19 03:35:02 - mmengine - INFO - bbox_mAP_copypaste: 0.264 0.704 0.100 -1.000 0.016 0.269
+2026/11/19 03:35:02 - mmengine - INFO - Epoch(val) [17][92/92]    coco/bbox_mAP: 0.2640  coco/bbox_mAP_50: 0.7040  coco/bbox_mAP_75: 0.1000  coco/bbox_mAP_s: -1.0000  coco/bbox_mAP_m: 0.0160  coco/bbox_mAP_l: 0.2690  data_time: 0.4042  time: 0.4923
+2026/11/19 03:35:25 - mmengine - INFO - Epoch(train) [18][ 50/401]  base_lr: 7.6896e-04 lr: 7.6896e-04  eta: 1:08:50  time: 0.4497  data_time: 0.1022  memory: 3470  grad_norm: 9.5880  loss: 1.2537  loss_cls: 0.2227  loss_bbox: 0.4259  loss_centerness: 0.6052
+2026/11/19 03:35:47 - mmengine - INFO - Epoch(train) [18][100/401]  base_lr: 7.6303e-04 lr: 7.6303e-04  eta: 1:08:27  time: 0.4364  data_time: 0.1206  memory: 3470  grad_norm: 9.7686  loss: 1.1582  loss_cls: 0.1521  loss_bbox: 0.4078  loss_centerness: 0.5984
+2026/11/19 03:36:09 - mmengine - INFO - Epoch(train) [18][150/401]  base_lr: 7.5710e-04 lr: 7.5710e-04  eta: 1:08:04  time: 0.4364  data_time: 0.1274  memory: 3470  grad_norm: 7.2112  loss: 1.1419  loss_cls: 0.1848  loss_bbox: 0.3684  loss_centerness: 0.5887
+2026/11/19 03:36:24 - mmengine - INFO - Exp name: fcosaug_s2_20261119_023024
+2026/11/19 03:36:32 - mmengine - INFO - Epoch(train) [18][200/401]  base_lr: 7.5115e-04 lr: 7.5115e-04  eta: 1:07:41  time: 0.4553  data_time: 0.1244  memory: 3470  grad_norm: 9.5431  loss: 1.2112  loss_cls: 0.1869  loss_bbox: 0.4315  loss_centerness: 0.5929
+2026/11/19 03:36:53 - mmengine - INFO - Epoch(train) [18][250/401]  base_lr: 7.4519e-04 lr: 7.4519e-04  eta: 1:07:18  time: 0.4201  data_time: 0.1080  memory: 3470  grad_norm: 9.7827  loss: 1.2042  loss_cls: 0.1863  loss_bbox: 0.4262  loss_centerness: 0.5918
+2026/11/19 03:37:16 - mmengine - INFO - Epoch(train) [18][300/401]  base_lr: 7.3922e-04 lr: 7.3922e-04  eta: 1:06:56  time: 0.4743  data_time: 0.1652  memory: 3470  grad_norm: 8.9910  loss: 1.1593  loss_cls: 0.1803  loss_bbox: 0.3782  loss_centerness: 0.6009
+2026/11/19 03:37:39 - mmengine - INFO - Epoch(train) [18][350/401]  base_lr: 7.3323e-04 lr: 7.3323e-04  eta: 1:06:33  time: 0.4466  data_time: 0.1152  memory: 3470  grad_norm: 10.8939  loss: 1.3198  loss_cls: 0.1953  loss_bbox: 0.5251  loss_centerness: 0.5994
+2026/11/19 03:38:01 - mmengine - INFO - Epoch(train) [18][400/401]  base_lr: 7.2724e-04 lr: 7.2724e-04  eta: 1:06:10  time: 0.4237  data_time: 0.1341  memory: 3470  grad_norm: 13.1211  loss: 1.2956  loss_cls: 0.2765  loss_bbox: 0.4501  loss_centerness: 0.5689
+2026/11/19 03:38:01 - mmengine - INFO - Exp name: fcosaug_s2_20261119_023024
+2026/11/19 03:38:01 - mmengine - INFO - Saving checkpoint at 18 epochs
+2026/11/19 03:38:26 - mmengine - INFO - Epoch(val) [18][50/92]    eta: 0:00:20  time: 0.4998  data_time: 0.4064  memory: 2174  
+2026/11/19 03:38:48 - mmengine - INFO - Evaluating bbox...
+2026/11/19 03:38:48 - mmengine - INFO - bbox_mAP_copypaste: 0.244 0.638 0.092 -1.000 0.018 0.247
+2026/11/19 03:38:48 - mmengine - INFO - Epoch(val) [18][92/92]    coco/bbox_mAP: 0.2440  coco/bbox_mAP_50: 0.6380  coco/bbox_mAP_75: 0.0920  coco/bbox_mAP_s: -1.0000  coco/bbox_mAP_m: 0.0180  coco/bbox_mAP_l: 0.2470  data_time: 0.4036  time: 0.4926
+2026/11/19 03:39:10 - mmengine - INFO - Epoch(train) [19][ 50/401]  base_lr: 7.2112e-04 lr: 7.2112e-04  eta: 1:05:47  time: 0.4547  data_time: 0.1201  memory: 3470  grad_norm: 9.7801  loss: 1.1979  loss_cls: 0.1664  loss_bbox: 0.4430  loss_centerness: 0.5884
+2026/11/19 03:39:33 - mmengine - INFO - Epoch(train) [19][100/401]  base_lr: 7.1511e-04 lr: 7.1511e-04  eta: 1:05:25  time: 0.4255  data_time: 0.1167  memory: 3470  grad_norm: 10.4841  loss: 1.1906  loss_cls: 0.2382  loss_bbox: 0.3726  loss_centerness: 0.5798
+2026/11/19 03:39:55 - mmengine - INFO - Epoch(train) [19][150/401]  base_lr: 7.0909e-04 lr: 7.0909e-04  eta: 1:05:02  time: 0.4306  data_time: 0.1002  memory: 3470  grad_norm: 9.7623  loss: 1.1766  loss_cls: 0.1969  loss_bbox: 0.3844  loss_centerness: 0.5953
+2026/11/19 03:40:16 - mmengine - INFO - Epoch(train) [19][200/401]  base_lr: 7.0307e-04 lr: 7.0307e-04  eta: 1:04:38  time: 0.4510  data_time: 0.1639  memory: 3470  grad_norm: 9.2381  loss: 1.1305  loss_cls: 0.1996  loss_bbox: 0.3493  loss_centerness: 0.5816
+2026/11/19 03:40:38 - mmengine - INFO - Epoch(train) [19][250/401]  base_lr: 6.9703e-04 lr: 6.9703e-04  eta: 1:04:15  time: 0.4312  data_time: 0.1189  memory: 3470  grad_norm: 9.0023  loss: 1.0648  loss_cls: 0.1544  loss_bbox: 0.3234  loss_centerness: 0.5869
+2026/11/19 03:41:01 - mmengine - INFO - Epoch(train) [19][300/401]  base_lr: 6.9099e-04 lr: 6.9099e-04  eta: 1:03:53  time: 0.4633  data_time: 0.1505  memory: 3470  grad_norm: 9.7973  loss: 1.1858  loss_cls: 0.1733  loss_bbox: 0.4271  loss_centerness: 0.5854
+2026/11/19 03:41:23 - mmengine - INFO - Epoch(train) [19][350/401]  base_lr: 6.8495e-04 lr: 6.8495e-04  eta: 1:03:30  time: 0.4543  data_time: 0.1473  memory: 3470  grad_norm: 9.0639  loss: 1.2250  loss_cls: 0.1957  loss_bbox: 0.4489  loss_centerness: 0.5804
+2026/11/19 03:41:45 - mmengine - INFO - Epoch(train) [19][400/401]  base_lr: 6.7890e-04 lr: 6.7890e-04  eta: 1:03:07  time: 0.4150  data_time: 0.1015  memory: 3470  grad_norm: 9.4824  loss: 1.0930  loss_cls: 0.1781  loss_bbox: 0.3395  loss_centerness: 0.5755
+2026/11/19 03:41:46 - mmengine - INFO - Exp name: fcosaug_s2_20261119_023024
+2026/11/19 03:41:46 - mmengine - INFO - Saving checkpoint at 19 epochs
+2026/11/19 03:42:11 - mmengine - INFO - Epoch(val) [19][50/92]    eta: 0:00:20  time: 0.5005  data_time: 0.4143  memory: 3019  
+2026/11/19 03:42:33 - mmengine - INFO - Evaluating bbox...
+2026/11/19 03:42:33 - mmengine - INFO - bbox_mAP_copypaste: 0.334 0.762 0.258 -1.000 0.025 0.338
+2026/11/19 03:42:33 - mmengine - INFO - Epoch(val) [19][92/92]    coco/bbox_mAP: 0.3340  coco/bbox_mAP_50: 0.7620  coco/bbox_mAP_75: 0.2580  coco/bbox_mAP_s: -1.0000  coco/bbox_mAP_m: 0.0250  coco/bbox_mAP_l: 0.3380  data_time: 0.4064  time: 0.4951
+2026/11/19 03:42:33 - mmengine - INFO - The previous best checkpoint C:\Users\rl-sa\TCC\tcc-rafael\work_dirs\sementes\fcosaug_s2\best_coco_bbox_mAP_50_epoch_16.pth is removed
+2026/11/19 03:42:33 - mmengine - INFO - The best checkpoint with 0.7620 coco/bbox_mAP_50 at 19 epoch is saved to best_coco_bbox_mAP_50_epoch_19.pth.
+2026/11/19 03:42:57 - mmengine - INFO - Epoch(train) [20][ 50/401]  base_lr: 6.7272e-04 lr: 6.7272e-04  eta: 1:02:44  time: 0.4322  data_time: 0.0997  memory: 3470  grad_norm: 8.7940  loss: 1.0965  loss_cls: 0.1588  loss_bbox: 0.3497  loss_centerness: 0.5880
+2026/11/19 03:43:19 - mmengine - INFO - Epoch(train) [20][100/401]  base_lr: 6.6666e-04 lr: 6.6666e-04  eta: 1:02:22  time: 0.4886  data_time: 0.1643  memory: 3470  grad_norm: 10.5647  loss: 1.1135  loss_cls: 0.1699  loss_bbox: 0.3661  loss_centerness: 0.5774
+2026/11/19 03:43:41 - mmengine - INFO - Epoch(train) [20][150/401]  base_lr: 6.6060e-04 lr: 6.6060e-04  eta: 1:01:59  time: 0.4496  data_time: 0.1419  memory: 3470  grad_norm: 12.1825  loss: 1.3105  loss_cls: 0.2248  loss_bbox: 0.4932  loss_centerness: 0.5925
+2026/11/19 03:44:03 - mmengine - INFO - Epoch(train) [20][200/401]  base_lr: 6.5454e-04 lr: 6.5454e-04  eta: 1:01:36  time: 0.4319  data_time: 0.1169  memory: 3470  grad_norm: 9.7918  loss: 1.1483  loss_cls: 0.1584  loss_bbox: 0.4001  loss_centerness: 0.5898
+2026/11/19 03:44:26 - mmengine - INFO - Epoch(train) [20][250/401]  base_lr: 6.4847e-04 lr: 6.4847e-04  eta: 1:01:13  time: 0.4736  data_time: 0.1046  memory: 3470  grad_norm: 9.4562  loss: 1.1001  loss_cls: 0.1736  loss_bbox: 0.3418  loss_centerness: 0.5846
+2026/11/19 03:44:47 - mmengine - INFO - Epoch(train) [20][300/401]  base_lr: 6.4240e-04 lr: 6.4240e-04  eta: 1:00:50  time: 0.4268  data_time: 0.0884  memory: 3470  grad_norm: 9.9197  loss: 1.1069  loss_cls: 0.1752  loss_bbox: 0.3411  loss_centerness: 0.5907
+2026/11/19 03:45:10 - mmengine - INFO - Epoch(train) [20][350/401]  base_lr: 6.3633e-04 lr: 6.3633e-04  eta: 1:00:28  time: 0.4363  data_time: 0.1165  memory: 3470  grad_norm: 10.0468  loss: 1.1462  loss_cls: 0.1812  loss_bbox: 0.3823  loss_centerness: 0.5826
+2026/11/19 03:45:24 - mmengine - INFO - Exp name: fcosaug_s2_20261119_023024
+2026/11/19 03:45:33 - mmengine - INFO - Epoch(train) [20][400/401]  base_lr: 6.3025e-04 lr: 6.3025e-04  eta: 1:00:06  time: 0.4301  data_time: 0.1038  memory: 3470  grad_norm: 10.9288  loss: 1.1281  loss_cls: 0.1690  loss_bbox: 0.3754  loss_centerness: 0.5837
+2026/11/19 03:45:33 - mmengine - INFO - Exp name: fcosaug_s2_20261119_023024
+2026/11/19 03:45:33 - mmengine - INFO - Saving checkpoint at 20 epochs
+2026/11/19 03:45:59 - mmengine - INFO - Epoch(val) [20][50/92]    eta: 0:00:20  time: 0.4963  data_time: 0.4098  memory: 3110  
+2026/11/19 03:46:20 - mmengine - INFO - Evaluating bbox...
+2026/11/19 03:46:20 - mmengine - INFO - bbox_mAP_copypaste: 0.319 0.736 0.164 -1.000 0.014 0.323
+2026/11/19 03:46:20 - mmengine - INFO - Epoch(val) [20][92/92]    coco/bbox_mAP: 0.3190  coco/bbox_mAP_50: 0.7360  coco/bbox_mAP_75: 0.1640  coco/bbox_mAP_s: -1.0000  coco/bbox_mAP_m: 0.0140  coco/bbox_mAP_l: 0.3230  data_time: 0.4048  time: 0.4933
+2026/11/19 03:46:44 - mmengine - INFO - Epoch(train) [21][ 50/401]  base_lr: 6.2406e-04 lr: 6.2406e-04  eta: 0:59:44  time: 0.4794  data_time: 0.1509  memory: 3470  grad_norm: 8.7704  loss: 1.0859  loss_cls: 0.1822  loss_bbox: 0.3243  loss_centerness: 0.5794
+2026/11/19 03:47:06 - mmengine - INFO - Epoch(train) [21][100/401]  base_lr: 6.1799e-04 lr: 6.1799e-04  eta: 0:59:21  time: 0.4457  data_time: 0.1479  memory: 3378  grad_norm: 11.2745  loss: 1.0408  loss_cls: 0.1515  loss_bbox: 0.3166  loss_centerness: 0.5728
+2026/11/19 03:47:28 - mmengine - INFO - Epoch(train) [21][150/401]  base_lr: 6.1192e-04 lr: 6.1192e-04  eta: 0:58:58  time: 0.4476  data_time: 0.1068  memory: 3470  grad_norm: 9.5275  loss: 1.0531  loss_cls: 0.1545  loss_bbox: 0.3169  loss_centerness: 0.5818
+2026/11/19 03:47:50 - mmengine - INFO - Epoch(train) [21][200/401]  base_lr: 6.0585e-04 lr: 6.0585e-04  eta: 0:58:35  time: 0.4414  data_time: 0.1127  memory: 3470  grad_norm: 10.7522  loss: 1.2434  loss_cls: 0.2511  loss_bbox: 0.4009  loss_centerness: 0.5914
+2026/11/19 03:48:12 - mmengine - INFO - Epoch(train) [21][250/401]  base_lr: 5.9979e-04 lr: 5.9979e-04  eta: 0:58:13  time: 0.4132  data_time: 0.1259  memory: 3470  grad_norm: 12.9373  loss: 1.2444  loss_cls: 0.1665  loss_bbox: 0.4835  loss_centerness: 0.5944
+2026/11/19 03:48:35 - mmengine - INFO - Epoch(train) [21][300/401]  base_lr: 5.9372e-04 lr: 5.9372e-04  eta: 0:57:50  time: 0.4418  data_time: 0.0970  memory: 3470  grad_norm: 9.5354  loss: 1.1738  loss_cls: 0.1915  loss_bbox: 0.3972  loss_centerness: 0.5851
+2026/11/19 03:48:57 - mmengine - INFO - Epoch(train) [21][350/401]  base_lr: 5.8766e-04 lr: 5.8766e-04  eta: 0:57:27  time: 0.4500  data_time: 0.1406  memory: 3470  grad_norm: 13.2568  loss: 1.1154  loss_cls: 0.1527  loss_bbox: 0.3826  loss_centerness: 0.5800
+2026/11/19 03:49:20 - mmengine - INFO - Epoch(train) [21][400/401]  base_lr: 5.8161e-04 lr: 5.8161e-04  eta: 0:57:05  time: 0.4099  data_time: 0.0897  memory: 3470  grad_norm: 9.7210  loss: 1.2248  loss_cls: 0.1991  loss_bbox: 0.4437  loss_centerness: 0.5820
+2026/11/19 03:49:20 - mmengine - INFO - Exp name: fcosaug_s2_20261119_023024
+2026/11/19 03:49:20 - mmengine - INFO - Saving checkpoint at 21 epochs
+2026/11/19 03:49:45 - mmengine - INFO - Epoch(val) [21][50/92]    eta: 0:00:20  time: 0.4943  data_time: 0.4040  memory: 2938  
+2026/11/19 03:50:06 - mmengine - INFO - Evaluating bbox...
+2026/11/19 03:50:06 - mmengine - INFO - bbox_mAP_copypaste: 0.292 0.754 0.125 -1.000 0.050 0.295
+2026/11/19 03:50:06 - mmengine - INFO - Epoch(val) [21][92/92]    coco/bbox_mAP: 0.2920  coco/bbox_mAP_50: 0.7540  coco/bbox_mAP_75: 0.1250  coco/bbox_mAP_s: -1.0000  coco/bbox_mAP_m: 0.0500  coco/bbox_mAP_l: 0.2950  data_time: 0.4027  time: 0.4915
+2026/11/19 03:50:29 - mmengine - INFO - Epoch(train) [22][ 50/401]  base_lr: 5.7544e-04 lr: 5.7544e-04  eta: 0:56:42  time: 0.4679  data_time: 0.1223  memory: 3470  grad_norm: 10.0195  loss: 1.1183  loss_cls: 0.1527  loss_bbox: 0.3743  loss_centerness: 0.5913
+2026/11/19 03:50:51 - mmengine - INFO - Epoch(train) [22][100/401]  base_lr: 5.6939e-04 lr: 5.6939e-04  eta: 0:56:19  time: 0.4217  data_time: 0.0984  memory: 3470  grad_norm: 12.3218  loss: 1.1495  loss_cls: 0.1814  loss_bbox: 0.3657  loss_centerness: 0.6023
+2026/11/19 03:51:13 - mmengine - INFO - Epoch(train) [22][150/401]  base_lr: 5.6335e-04 lr: 5.6335e-04  eta: 0:55:56  time: 0.4253  data_time: 0.1123  memory: 3470  grad_norm: 10.5464  loss: 1.1114  loss_cls: 0.2210  loss_bbox: 0.3112  loss_centerness: 0.5791
+2026/11/19 03:51:36 - mmengine - INFO - Epoch(train) [22][200/401]  base_lr: 5.5732e-04 lr: 5.5732e-04  eta: 0:55:34  time: 0.4563  data_time: 0.1337  memory: 3470  grad_norm: 9.6984  loss: 1.0510  loss_cls: 0.1530  loss_bbox: 0.3223  loss_centerness: 0.5757
+2026/11/19 03:51:58 - mmengine - INFO - Epoch(train) [22][250/401]  base_lr: 5.5129e-04 lr: 5.5129e-04  eta: 0:55:12  time: 0.4304  data_time: 0.1069  memory: 3470  grad_norm: 11.0269  loss: 1.1908  loss_cls: 0.1891  loss_bbox: 0.4282  loss_centerness: 0.5735
+2026/11/19 03:52:21 - mmengine - INFO - Epoch(train) [22][300/401]  base_lr: 5.4527e-04 lr: 5.4527e-04  eta: 0:54:49  time: 0.4565  data_time: 0.1415  memory: 3470  grad_norm: 9.2505  loss: 1.0751  loss_cls: 0.1460  loss_bbox: 0.3440  loss_centerness: 0.5851
+2026/11/19 03:52:44 - mmengine - INFO - Epoch(train) [22][350/401]  base_lr: 5.3926e-04 lr: 5.3926e-04  eta: 0:54:27  time: 0.4799  data_time: 0.1640  memory: 3470  grad_norm: 11.3172  loss: 1.1142  loss_cls: 0.1721  loss_bbox: 0.3557  loss_centerness: 0.5865
+2026/11/19 03:53:08 - mmengine - INFO - Epoch(train) [22][400/401]  base_lr: 5.3326e-04 lr: 5.3326e-04  eta: 0:54:06  time: 0.4757  data_time: 0.1349  memory: 3470  grad_norm: 10.4995  loss: 1.0784  loss_cls: 0.1465  loss_bbox: 0.3512  loss_centerness: 0.5808
+2026/11/19 03:53:08 - mmengine - INFO - Exp name: fcosaug_s2_20261119_023024
+2026/11/19 03:53:08 - mmengine - INFO - Saving checkpoint at 22 epochs
+2026/11/19 03:53:33 - mmengine - INFO - Epoch(val) [22][50/92]    eta: 0:00:20  time: 0.4971  data_time: 0.4076  memory: 2693  
+2026/11/19 03:53:54 - mmengine - INFO - Evaluating bbox...
+2026/11/19 03:53:55 - mmengine - INFO - bbox_mAP_copypaste: 0.310 0.688 0.192 -1.000 0.020 0.313
+2026/11/19 03:53:55 - mmengine - INFO - Epoch(val) [22][92/92]    coco/bbox_mAP: 0.3100  coco/bbox_mAP_50: 0.6880  coco/bbox_mAP_75: 0.1920  coco/bbox_mAP_s: -1.0000  coco/bbox_mAP_m: 0.0200  coco/bbox_mAP_l: 0.3130  data_time: 0.4034  time: 0.4919
+2026/11/19 03:54:19 - mmengine - INFO - Epoch(train) [23][ 50/401]  base_lr: 5.2715e-04 lr: 5.2715e-04  eta: 0:53:45  time: 0.4495  data_time: 0.1561  memory: 3470  grad_norm: 11.1396  loss: 1.0895  loss_cls: 0.1451  loss_bbox: 0.3528  loss_centerness: 0.5916
+2026/11/19 03:54:42 - mmengine - INFO - Epoch(train) [23][100/401]  base_lr: 5.2117e-04 lr: 5.2117e-04  eta: 0:53:23  time: 0.4299  data_time: 0.1003  memory: 3470  grad_norm: 10.2928  loss: 1.0155  loss_cls: 0.1408  loss_bbox: 0.3036  loss_centerness: 0.5711
+2026/11/19 03:55:06 - mmengine - INFO - Epoch(train) [23][150/401]  base_lr: 5.1519e-04 lr: 5.1519e-04  eta: 0:53:01  time: 0.4832  data_time: 0.1808  memory: 3378  grad_norm: 9.8971  loss: 1.0562  loss_cls: 0.1729  loss_bbox: 0.3129  loss_centerness: 0.5704
+2026/11/19 03:55:19 - mmengine - INFO - Exp name: fcosaug_s2_20261119_023024
+2026/11/19 03:55:29 - mmengine - INFO - Epoch(train) [23][200/401]  base_lr: 5.0923e-04 lr: 5.0923e-04  eta: 0:52:39  time: 0.4514  data_time: 0.1636  memory: 3470  grad_norm: 11.2277  loss: 1.0755  loss_cls: 0.1748  loss_bbox: 0.3332  loss_centerness: 0.5676
+2026/11/19 03:55:52 - mmengine - INFO - Epoch(train) [23][250/401]  base_lr: 5.0328e-04 lr: 5.0328e-04  eta: 0:52:17  time: 0.4781  data_time: 0.1655  memory: 3470  grad_norm: 10.2626  loss: 1.1770  loss_cls: 0.1734  loss_bbox: 0.4293  loss_centerness: 0.5744
+2026/11/19 03:56:16 - mmengine - INFO - Epoch(train) [23][300/401]  base_lr: 4.9735e-04 lr: 4.9735e-04  eta: 0:51:55  time: 0.4860  data_time: 0.1313  memory: 3470  grad_norm: 12.2006  loss: 1.1514  loss_cls: 0.1948  loss_bbox: 0.3808  loss_centerness: 0.5759
+2026/11/19 03:56:38 - mmengine - INFO - Epoch(train) [23][350/401]  base_lr: 4.9142e-04 lr: 4.9142e-04  eta: 0:51:32  time: 0.4374  data_time: 0.1145  memory: 3470  grad_norm: 9.9340  loss: 1.0945  loss_cls: 0.1840  loss_bbox: 0.3353  loss_centerness: 0.5752
+2026/11/19 03:57:01 - mmengine - INFO - Epoch(train) [23][400/401]  base_lr: 4.8551e-04 lr: 4.8551e-04  eta: 0:51:10  time: 0.4466  data_time: 0.1400  memory: 3378  grad_norm: 11.1972  loss: 1.1527  loss_cls: 0.1858  loss_bbox: 0.3835  loss_centerness: 0.5834
+2026/11/19 03:57:01 - mmengine - INFO - Exp name: fcosaug_s2_20261119_023024
+2026/11/19 03:57:01 - mmengine - INFO - Saving checkpoint at 23 epochs
+2026/11/19 03:57:26 - mmengine - INFO - Epoch(val) [23][50/92]    eta: 0:00:20  time: 0.4959  data_time: 0.4112  memory: 2597  
+2026/11/19 03:57:47 - mmengine - INFO - Evaluating bbox...
+2026/11/19 03:57:48 - mmengine - INFO - bbox_mAP_copypaste: 0.339 0.714 0.217 -1.000 0.011 0.343
+2026/11/19 03:57:48 - mmengine - INFO - Epoch(val) [23][92/92]    coco/bbox_mAP: 0.3390  coco/bbox_mAP_50: 0.7140  coco/bbox_mAP_75: 0.2170  coco/bbox_mAP_s: -1.0000  coco/bbox_mAP_m: 0.0110  coco/bbox_mAP_l: 0.3430  data_time: 0.4077  time: 0.4948
+2026/11/19 03:58:11 - mmengine - INFO - Epoch(train) [24][ 50/401]  base_lr: 4.7949e-04 lr: 4.7949e-04  eta: 0:50:47  time: 0.4422  data_time: 0.1001  memory: 3470  grad_norm: 12.6463  loss: 1.1502  loss_cls: 0.1663  loss_bbox: 0.4035  loss_centerness: 0.5803
+2026/11/19 03:58:33 - mmengine - INFO - Epoch(train) [24][100/401]  base_lr: 4.7361e-04 lr: 4.7361e-04  eta: 0:50:25  time: 0.4609  data_time: 0.1447  memory: 3470  grad_norm: 10.0124  loss: 1.0853  loss_cls: 0.1505  loss_bbox: 0.3563  loss_centerness: 0.5785
+2026/11/19 03:58:56 - mmengine - INFO - Epoch(train) [24][150/401]  base_lr: 4.6774e-04 lr: 4.6774e-04  eta: 0:50:03  time: 0.4990  data_time: 0.1650  memory: 3470  grad_norm: 10.4604  loss: 1.0573  loss_cls: 0.1517  loss_bbox: 0.3164  loss_centerness: 0.5892
+2026/11/19 03:59:19 - mmengine - INFO - Epoch(train) [24][200/401]  base_lr: 4.6189e-04 lr: 4.6189e-04  eta: 0:49:40  time: 0.4431  data_time: 0.1118  memory: 3470  grad_norm: 10.3421  loss: 1.0150  loss_cls: 0.1232  loss_bbox: 0.3206  loss_centerness: 0.5712
+2026/11/19 03:59:43 - mmengine - INFO - Epoch(train) [24][250/401]  base_lr: 4.5605e-04 lr: 4.5605e-04  eta: 0:49:19  time: 0.5034  data_time: 0.1587  memory: 3470  grad_norm: 10.4153  loss: 1.1024  loss_cls: 0.1892  loss_bbox: 0.3315  loss_centerness: 0.5817
+2026/11/19 04:00:05 - mmengine - INFO - Epoch(train) [24][300/401]  base_lr: 4.5024e-04 lr: 4.5024e-04  eta: 0:48:56  time: 0.4296  data_time: 0.1181  memory: 3470  grad_norm: 9.9823  loss: 0.9619  loss_cls: 0.1474  loss_bbox: 0.2535  loss_centerness: 0.5610
+2026/11/19 04:00:29 - mmengine - INFO - Epoch(train) [24][350/401]  base_lr: 4.4443e-04 lr: 4.4443e-04  eta: 0:48:34  time: 0.4672  data_time: 0.1087  memory: 3470  grad_norm: 10.7845  loss: 0.9766  loss_cls: 0.1041  loss_bbox: 0.3016  loss_centerness: 0.5709
+2026/11/19 04:00:52 - mmengine - INFO - Epoch(train) [24][400/401]  base_lr: 4.3865e-04 lr: 4.3865e-04  eta: 0:48:12  time: 0.5111  data_time: 0.1722  memory: 3470  grad_norm: 8.9243  loss: 1.0587  loss_cls: 0.1670  loss_bbox: 0.3009  loss_centerness: 0.5908
+2026/11/19 04:00:53 - mmengine - INFO - Exp name: fcosaug_s2_20261119_023024
+2026/11/19 04:00:53 - mmengine - INFO - Saving checkpoint at 24 epochs
+2026/11/19 04:01:18 - mmengine - INFO - Epoch(val) [24][50/92]    eta: 0:00:20  time: 0.4925  data_time: 0.4060  memory: 3205  
+2026/11/19 04:01:39 - mmengine - INFO - Evaluating bbox...
+2026/11/19 04:01:39 - mmengine - INFO - bbox_mAP_copypaste: 0.338 0.718 0.287 -1.000 0.027 0.341
+2026/11/19 04:01:39 - mmengine - INFO - Epoch(val) [24][92/92]    coco/bbox_mAP: 0.3380  coco/bbox_mAP_50: 0.7180  coco/bbox_mAP_75: 0.2870  coco/bbox_mAP_s: -1.0000  coco/bbox_mAP_m: 0.0270  coco/bbox_mAP_l: 0.3410  data_time: 0.4038  time: 0.4906
+2026/11/19 04:02:03 - mmengine - INFO - Epoch(train) [25][ 50/401]  base_lr: 4.3277e-04 lr: 4.3277e-04  eta: 0:47:50  time: 0.4609  data_time: 0.1442  memory: 3470  grad_norm: 12.6050  loss: 1.0920  loss_cls: 0.1734  loss_bbox: 0.3376  loss_centerness: 0.5810
+2026/11/19 04:02:26 - mmengine - INFO - Epoch(train) [25][100/401]  base_lr: 4.2702e-04 lr: 4.2702e-04  eta: 0:47:28  time: 0.4520  data_time: 0.1394  memory: 3470  grad_norm: 11.6794  loss: 1.0642  loss_cls: 0.1633  loss_bbox: 0.3309  loss_centerness: 0.5701
+2026/11/19 04:02:49 - mmengine - INFO - Epoch(train) [25][150/401]  base_lr: 4.2129e-04 lr: 4.2129e-04  eta: 0:47:05  time: 0.4676  data_time: 0.1304  memory: 3358  grad_norm: 11.7311  loss: 1.1317  loss_cls: 0.2060  loss_bbox: 0.3367  loss_centerness: 0.5890
+2026/11/19 04:03:11 - mmengine - INFO - Epoch(train) [25][200/401]  base_lr: 4.1559e-04 lr: 4.1559e-04  eta: 0:46:43  time: 0.4730  data_time: 0.1286  memory: 3470  grad_norm: 8.8079  loss: 0.9935  loss_cls: 0.1221  loss_bbox: 0.2797  loss_centerness: 0.5917
+2026/11/19 04:03:33 - mmengine - INFO - Epoch(train) [25][250/401]  base_lr: 4.0990e-04 lr: 4.0990e-04  eta: 0:46:20  time: 0.4126  data_time: 0.1313  memory: 3470  grad_norm: 10.3962  loss: 1.0275  loss_cls: 0.1399  loss_bbox: 0.3149  loss_centerness: 0.5727
+2026/11/19 04:03:57 - mmengine - INFO - Epoch(train) [25][300/401]  base_lr: 4.0423e-04 lr: 4.0423e-04  eta: 0:45:58  time: 0.4771  data_time: 0.1298  memory: 3470  grad_norm: 10.5826  loss: 1.1462  loss_cls: 0.1740  loss_bbox: 0.3802  loss_centerness: 0.5920
+2026/11/19 04:04:20 - mmengine - INFO - Epoch(train) [25][350/401]  base_lr: 3.9859e-04 lr: 3.9859e-04  eta: 0:45:36  time: 0.4492  data_time: 0.1334  memory: 3470  grad_norm: 10.7146  loss: 1.0110  loss_cls: 0.1321  loss_bbox: 0.3202  loss_centerness: 0.5587
+2026/11/19 04:04:32 - mmengine - INFO - Exp name: fcosaug_s2_20261119_023024
+2026/11/19 04:04:42 - mmengine - INFO - Epoch(train) [25][400/401]  base_lr: 3.9297e-04 lr: 3.9297e-04  eta: 0:45:13  time: 0.4597  data_time: 0.1317  memory: 3470  grad_norm: 11.2536  loss: 1.1336  loss_cls: 0.1915  loss_bbox: 0.3514  loss_centerness: 0.5907
+2026/11/19 04:04:43 - mmengine - INFO - Exp name: fcosaug_s2_20261119_023024
+2026/11/19 04:04:43 - mmengine - INFO - Saving checkpoint at 25 epochs
+2026/11/19 04:05:08 - mmengine - INFO - Epoch(val) [25][50/92]    eta: 0:00:20  time: 0.4933  data_time: 0.4036  memory: 1995  
+2026/11/19 04:05:29 - mmengine - INFO - Evaluating bbox...
+2026/11/19 04:05:29 - mmengine - INFO - bbox_mAP_copypaste: 0.364 0.769 0.290 -1.000 0.062 0.367
+2026/11/19 04:05:29 - mmengine - INFO - Epoch(val) [25][92/92]    coco/bbox_mAP: 0.3640  coco/bbox_mAP_50: 0.7690  coco/bbox_mAP_75: 0.2900  coco/bbox_mAP_s: -1.0000  coco/bbox_mAP_m: 0.0620  coco/bbox_mAP_l: 0.3670  data_time: 0.4035  time: 0.4943
+2026/11/19 04:05:29 - mmengine - INFO - The previous best checkpoint C:\Users\rl-sa\TCC\tcc-rafael\work_dirs\sementes\fcosaug_s2\best_coco_bbox_mAP_50_epoch_19.pth is removed
+2026/11/19 04:05:30 - mmengine - INFO - The best checkpoint with 0.7690 coco/bbox_mAP_50 at 25 epoch is saved to best_coco_bbox_mAP_50_epoch_25.pth.
+2026/11/19 04:05:53 - mmengine - INFO - Epoch(train) [26][ 50/401]  base_lr: 3.8726e-04 lr: 3.8726e-04  eta: 0:44:50  time: 0.4154  data_time: 0.1198  memory: 3470  grad_norm: 9.6235  loss: 1.0729  loss_cls: 0.1613  loss_bbox: 0.3425  loss_centerness: 0.5691
+2026/11/19 04:06:15 - mmengine - INFO - Epoch(train) [26][100/401]  base_lr: 3.8168e-04 lr: 3.8168e-04  eta: 0:44:27  time: 0.4039  data_time: 0.1121  memory: 3470  grad_norm: 11.1572  loss: 1.0689  loss_cls: 0.1518  loss_bbox: 0.3416  loss_centerness: 0.5754
+2026/11/19 04:06:38 - mmengine - INFO - Epoch(train) [26][150/401]  base_lr: 3.7613e-04 lr: 3.7613e-04  eta: 0:44:04  time: 0.4413  data_time: 0.1239  memory: 3470  grad_norm: 9.9929  loss: 1.0126  loss_cls: 0.1494  loss_bbox: 0.2909  loss_centerness: 0.5723
+2026/11/19 04:07:01 - mmengine - INFO - Epoch(train) [26][200/401]  base_lr: 3.7060e-04 lr: 3.7060e-04  eta: 0:43:42  time: 0.4822  data_time: 0.1438  memory: 3470  grad_norm: 11.0344  loss: 0.9817  loss_cls: 0.1319  loss_bbox: 0.2729  loss_centerness: 0.5769
+2026/11/19 04:07:23 - mmengine - INFO - Epoch(train) [26][250/401]  base_lr: 3.6510e-04 lr: 3.6510e-04  eta: 0:43:19  time: 0.4272  data_time: 0.1020  memory: 3470  grad_norm: 12.1227  loss: 1.0578  loss_cls: 0.1629  loss_bbox: 0.3105  loss_centerness: 0.5845
+2026/11/19 04:07:45 - mmengine - INFO - Epoch(train) [26][300/401]  base_lr: 3.5962e-04 lr: 3.5962e-04  eta: 0:42:57  time: 0.4525  data_time: 0.1396  memory: 3470  grad_norm: 10.5407  loss: 1.0544  loss_cls: 0.1469  loss_bbox: 0.3346  loss_centerness: 0.5729
+2026/11/19 04:08:07 - mmengine - INFO - Epoch(train) [26][350/401]  base_lr: 3.5417e-04 lr: 3.5417e-04  eta: 0:42:34  time: 0.4479  data_time: 0.1558  memory: 3470  grad_norm: 9.7964  loss: 1.0164  loss_cls: 0.1451  loss_bbox: 0.2870  loss_centerness: 0.5843
+2026/11/19 04:08:30 - mmengine - INFO - Epoch(train) [26][400/401]  base_lr: 3.4875e-04 lr: 3.4875e-04  eta: 0:42:12  time: 0.4491  data_time: 0.1293  memory: 3470  grad_norm: 10.1792  loss: 1.0719  loss_cls: 0.1571  loss_bbox: 0.3456  loss_centerness: 0.5692
+2026/11/19 04:08:31 - mmengine - INFO - Exp name: fcosaug_s2_20261119_023024
+2026/11/19 04:08:31 - mmengine - INFO - Saving checkpoint at 26 epochs
+2026/11/19 04:08:56 - mmengine - INFO - Epoch(val) [26][50/92]    eta: 0:00:20  time: 0.4978  data_time: 0.4098  memory: 2542  
+2026/11/19 04:09:17 - mmengine - INFO - Evaluating bbox...
+2026/11/19 04:09:17 - mmengine - INFO - bbox_mAP_copypaste: 0.340 0.762 0.214 -1.000 0.017 0.343
+2026/11/19 04:09:17 - mmengine - INFO - Epoch(val) [26][92/92]    coco/bbox_mAP: 0.3400  coco/bbox_mAP_50: 0.7620  coco/bbox_mAP_75: 0.2140  coco/bbox_mAP_s: -1.0000  coco/bbox_mAP_m: 0.0170  coco/bbox_mAP_l: 0.3430  data_time: 0.4046  time: 0.4933
+2026/11/19 04:09:41 - mmengine - INFO - Epoch(train) [27][ 50/401]  base_lr: 3.4324e-04 lr: 3.4324e-04  eta: 0:41:49  time: 0.4923  data_time: 0.1648  memory: 3470  grad_norm: 8.3025  loss: 1.0060  loss_cls: 0.1504  loss_bbox: 0.2879  loss_centerness: 0.5677
+2026/11/19 04:10:04 - mmengine - INFO - Epoch(train) [27][100/401]  base_lr: 3.3787e-04 lr: 3.3787e-04  eta: 0:41:27  time: 0.4696  data_time: 0.1281  memory: 3470  grad_norm: 12.1390  loss: 1.0594  loss_cls: 0.1643  loss_bbox: 0.3229  loss_centerness: 0.5722
+2026/11/19 04:10:26 - mmengine - INFO - Epoch(train) [27][150/401]  base_lr: 3.3253e-04 lr: 3.3253e-04  eta: 0:41:04  time: 0.4496  data_time: 0.1191  memory: 3378  grad_norm: 9.8734  loss: 1.0046  loss_cls: 0.1407  loss_bbox: 0.2828  loss_centerness: 0.5811
+2026/11/19 04:10:49 - mmengine - INFO - Epoch(train) [27][200/401]  base_lr: 3.2722e-04 lr: 3.2722e-04  eta: 0:40:41  time: 0.4757  data_time: 0.1573  memory: 3470  grad_norm: 9.4346  loss: 0.9936  loss_cls: 0.1322  loss_bbox: 0.2900  loss_centerness: 0.5714
+2026/11/19 04:11:10 - mmengine - INFO - Epoch(train) [27][250/401]  base_lr: 3.2194e-04 lr: 3.2194e-04  eta: 0:40:18  time: 0.4234  data_time: 0.1177  memory: 3470  grad_norm: 10.1068  loss: 0.9812  loss_cls: 0.1274  loss_bbox: 0.2835  loss_centerness: 0.5703
+2026/11/19 04:11:33 - mmengine - INFO - Epoch(train) [27][300/401]  base_lr: 3.1668e-04 lr: 3.1668e-04  eta: 0:39:56  time: 0.4569  data_time: 0.1532  memory: 3470  grad_norm: 9.3530  loss: 0.9336  loss_cls: 0.1072  loss_bbox: 0.2534  loss_centerness: 0.5730
+2026/11/19 04:11:55 - mmengine - INFO - Epoch(train) [27][350/401]  base_lr: 3.1146e-04 lr: 3.1146e-04  eta: 0:39:33  time: 0.4384  data_time: 0.1359  memory: 3470  grad_norm: 9.2652  loss: 0.9612  loss_cls: 0.1397  loss_bbox: 0.2580  loss_centerness: 0.5635
+2026/11/19 04:12:18 - mmengine - INFO - Epoch(train) [27][400/401]  base_lr: 3.0626e-04 lr: 3.0626e-04  eta: 0:39:11  time: 0.4527  data_time: 0.1128  memory: 3470  grad_norm: 12.5881  loss: 1.2378  loss_cls: 0.1901  loss_bbox: 0.4395  loss_centerness: 0.6082
+2026/11/19 04:12:18 - mmengine - INFO - Exp name: fcosaug_s2_20261119_023024
+2026/11/19 04:12:18 - mmengine - INFO - Saving checkpoint at 27 epochs
+2026/11/19 04:12:44 - mmengine - INFO - Epoch(val) [27][50/92]    eta: 0:00:20  time: 0.4992  data_time: 0.4083  memory: 2174  
+2026/11/19 04:13:05 - mmengine - INFO - Evaluating bbox...
+2026/11/19 04:13:05 - mmengine - INFO - bbox_mAP_copypaste: 0.316 0.727 0.187 -1.000 0.125 0.317
+2026/11/19 04:13:05 - mmengine - INFO - Epoch(val) [27][92/92]    coco/bbox_mAP: 0.3160  coco/bbox_mAP_50: 0.7270  coco/bbox_mAP_75: 0.1870  coco/bbox_mAP_s: -1.0000  coco/bbox_mAP_m: 0.1250  coco/bbox_mAP_l: 0.3170  data_time: 0.4036  time: 0.4930
+2026/11/19 04:13:28 - mmengine - INFO - Epoch(train) [28][ 50/401]  base_lr: 3.0100e-04 lr: 3.0100e-04  eta: 0:38:48  time: 0.4368  data_time: 0.1082  memory: 3470  grad_norm: 10.9956  loss: 1.1075  loss_cls: 0.1669  loss_bbox: 0.3446  loss_centerness: 0.5961
+2026/11/19 04:13:50 - mmengine - INFO - Epoch(train) [28][100/401]  base_lr: 2.9587e-04 lr: 2.9587e-04  eta: 0:38:25  time: 0.4389  data_time: 0.1392  memory: 3378  grad_norm: 10.8813  loss: 1.0127  loss_cls: 0.1292  loss_bbox: 0.3132  loss_centerness: 0.5703
+2026/11/19 04:14:12 - mmengine - INFO - Epoch(train) [28][150/401]  base_lr: 2.9077e-04 lr: 2.9077e-04  eta: 0:38:03  time: 0.4519  data_time: 0.1419  memory: 3470  grad_norm: 9.4041  loss: 1.0034  loss_cls: 0.1179  loss_bbox: 0.2954  loss_centerness: 0.5901
+2026/11/19 04:14:23 - mmengine - INFO - Exp name: fcosaug_s2_20261119_023024
+2026/11/19 04:14:35 - mmengine - INFO - Epoch(train) [28][200/401]  base_lr: 2.8570e-04 lr: 2.8570e-04  eta: 0:37:40  time: 0.4516  data_time: 0.1306  memory: 3470  grad_norm: 10.6223  loss: 1.0276  loss_cls: 0.1272  loss_bbox: 0.3162  loss_centerness: 0.5843
+2026/11/19 04:14:57 - mmengine - INFO - Epoch(train) [28][250/401]  base_lr: 2.8067e-04 lr: 2.8067e-04  eta: 0:37:17  time: 0.4503  data_time: 0.1196  memory: 3470  grad_norm: 11.3818  loss: 1.0366  loss_cls: 0.1277  loss_bbox: 0.3356  loss_centerness: 0.5732
+2026/11/19 04:15:19 - mmengine - INFO - Epoch(train) [28][300/401]  base_lr: 2.7567e-04 lr: 2.7567e-04  eta: 0:36:54  time: 0.4271  data_time: 0.1005  memory: 3378  grad_norm: 12.6108  loss: 1.1000  loss_cls: 0.1587  loss_bbox: 0.3578  loss_centerness: 0.5835
+2026/11/19 04:15:42 - mmengine - INFO - Epoch(train) [28][350/401]  base_lr: 2.7071e-04 lr: 2.7071e-04  eta: 0:36:32  time: 0.4674  data_time: 0.1692  memory: 3470  grad_norm: 10.4448  loss: 0.9836  loss_cls: 0.1429  loss_bbox: 0.2708  loss_centerness: 0.5699
+2026/11/19 04:16:04 - mmengine - INFO - Epoch(train) [28][400/401]  base_lr: 2.6577e-04 lr: 2.6577e-04  eta: 0:36:10  time: 0.4343  data_time: 0.0981  memory: 3470  grad_norm: 12.2275  loss: 1.1609  loss_cls: 0.1970  loss_bbox: 0.3590  loss_centerness: 0.6049
+2026/11/19 04:16:05 - mmengine - INFO - Exp name: fcosaug_s2_20261119_023024
+2026/11/19 04:16:05 - mmengine - INFO - Saving checkpoint at 28 epochs
+2026/11/19 04:16:30 - mmengine - INFO - Epoch(val) [28][50/92]    eta: 0:00:20  time: 0.4971  data_time: 0.4101  memory: 3166  
+2026/11/19 04:16:51 - mmengine - INFO - Evaluating bbox...
+2026/11/19 04:16:52 - mmengine - INFO - bbox_mAP_copypaste: 0.290 0.706 0.164 -1.000 0.064 0.293
+2026/11/19 04:16:52 - mmengine - INFO - Epoch(val) [28][92/92]    coco/bbox_mAP: 0.2900  coco/bbox_mAP_50: 0.7060  coco/bbox_mAP_75: 0.1640  coco/bbox_mAP_s: -1.0000  coco/bbox_mAP_m: 0.0640  coco/bbox_mAP_l: 0.2930  data_time: 0.4052  time: 0.4944
+2026/11/19 04:17:15 - mmengine - INFO - Epoch(train) [29][ 50/401]  base_lr: 2.6078e-04 lr: 2.6078e-04  eta: 0:35:47  time: 0.4574  data_time: 0.1348  memory: 3470  grad_norm: 10.4554  loss: 1.0110  loss_cls: 0.1446  loss_bbox: 0.2924  loss_centerness: 0.5741
+2026/11/19 04:17:38 - mmengine - INFO - Epoch(train) [29][100/401]  base_lr: 2.5592e-04 lr: 2.5592e-04  eta: 0:35:24  time: 0.4302  data_time: 0.1068  memory: 3470  grad_norm: 9.2347  loss: 0.9474  loss_cls: 0.1289  loss_bbox: 0.2485  loss_centerness: 0.5699
+2026/11/19 04:18:00 - mmengine - INFO - Epoch(train) [29][150/401]  base_lr: 2.5110e-04 lr: 2.5110e-04  eta: 0:35:02  time: 0.4409  data_time: 0.1088  memory: 3470  grad_norm: 9.9744  loss: 1.0451  loss_cls: 0.1664  loss_bbox: 0.3066  loss_centerness: 0.5720
+2026/11/19 04:18:22 - mmengine - INFO - Epoch(train) [29][200/401]  base_lr: 2.4631e-04 lr: 2.4631e-04  eta: 0:34:39  time: 0.4146  data_time: 0.1137  memory: 3470  grad_norm: 11.0857  loss: 1.0969  loss_cls: 0.1604  loss_bbox: 0.3571  loss_centerness: 0.5795
+2026/11/19 04:18:44 - mmengine - INFO - Epoch(train) [29][250/401]  base_lr: 2.4156e-04 lr: 2.4156e-04  eta: 0:34:16  time: 0.4415  data_time: 0.1233  memory: 3470  grad_norm: 10.0181  loss: 1.0256  loss_cls: 0.1449  loss_bbox: 0.2890  loss_centerness: 0.5917
+2026/11/19 04:19:06 - mmengine - INFO - Epoch(train) [29][300/401]  base_lr: 2.3684e-04 lr: 2.3684e-04  eta: 0:33:54  time: 0.4429  data_time: 0.1272  memory: 3470  grad_norm: 9.9378  loss: 1.0177  loss_cls: 0.1357  loss_bbox: 0.2998  loss_centerness: 0.5822
+2026/11/19 04:19:28 - mmengine - INFO - Epoch(train) [29][350/401]  base_lr: 2.3217e-04 lr: 2.3217e-04  eta: 0:33:31  time: 0.4557  data_time: 0.1404  memory: 3470  grad_norm: 12.5787  loss: 1.0616  loss_cls: 0.1763  loss_bbox: 0.3064  loss_centerness: 0.5790
+2026/11/19 04:19:50 - mmengine - INFO - Epoch(train) [29][400/401]  base_lr: 2.2753e-04 lr: 2.2753e-04  eta: 0:33:08  time: 0.4364  data_time: 0.1189  memory: 3378  grad_norm: 12.6578  loss: 1.0704  loss_cls: 0.1774  loss_bbox: 0.3281  loss_centerness: 0.5649
+2026/11/19 04:19:51 - mmengine - INFO - Exp name: fcosaug_s2_20261119_023024
+2026/11/19 04:19:51 - mmengine - INFO - Saving checkpoint at 29 epochs
+2026/11/19 04:20:16 - mmengine - INFO - Epoch(val) [29][50/92]    eta: 0:00:20  time: 0.5019  data_time: 0.4067  memory: 2693  
+2026/11/19 04:20:37 - mmengine - INFO - Evaluating bbox...
+2026/11/19 04:20:37 - mmengine - INFO - bbox_mAP_copypaste: 0.316 0.701 0.193 -1.000 0.200 0.320
+2026/11/19 04:20:37 - mmengine - INFO - Epoch(val) [29][92/92]    coco/bbox_mAP: 0.3160  coco/bbox_mAP_50: 0.7010  coco/bbox_mAP_75: 0.1930  coco/bbox_mAP_s: -1.0000  coco/bbox_mAP_m: 0.2000  coco/bbox_mAP_l: 0.3200  data_time: 0.4044  time: 0.4934
+2026/11/19 04:21:00 - mmengine - INFO - Epoch(train) [30][ 50/401]  base_lr: 2.2284e-04 lr: 2.2284e-04  eta: 0:32:45  time: 0.4334  data_time: 0.1082  memory: 3470  grad_norm: 10.6469  loss: 1.0487  loss_cls: 0.1333  loss_bbox: 0.3413  loss_centerness: 0.5742
+2026/11/19 04:21:22 - mmengine - INFO - Epoch(train) [30][100/401]  base_lr: 2.1828e-04 lr: 2.1828e-04  eta: 0:32:22  time: 0.4335  data_time: 0.1153  memory: 3470  grad_norm: 9.9793  loss: 0.9636  loss_cls: 0.1257  loss_bbox: 0.2568  loss_centerness: 0.5810
+2026/11/19 04:21:44 - mmengine - INFO - Epoch(train) [30][150/401]  base_lr: 2.1376e-04 lr: 2.1376e-04  eta: 0:32:00  time: 0.4978  data_time: 0.1621  memory: 3470  grad_norm: 9.3897  loss: 0.9389  loss_cls: 0.1086  loss_bbox: 0.2532  loss_centerness: 0.5771
+2026/11/19 04:22:07 - mmengine - INFO - Epoch(train) [30][200/401]  base_lr: 2.0928e-04 lr: 2.0928e-04  eta: 0:31:37  time: 0.4463  data_time: 0.1211  memory: 3470  grad_norm: 11.4855  loss: 0.9445  loss_cls: 0.1318  loss_bbox: 0.2446  loss_centerness: 0.5681
+2026/11/19 04:22:29 - mmengine - INFO - Epoch(train) [30][250/401]  base_lr: 2.0484e-04 lr: 2.0484e-04  eta: 0:31:15  time: 0.5105  data_time: 0.1771  memory: 3470  grad_norm: 9.2180  loss: 0.9729  loss_cls: 0.1291  loss_bbox: 0.2598  loss_centerness: 0.5839
+2026/11/19 04:22:51 - mmengine - INFO - Epoch(train) [30][300/401]  base_lr: 2.0044e-04 lr: 2.0044e-04  eta: 0:30:52  time: 0.4592  data_time: 0.1515  memory: 3470  grad_norm: 10.7922  loss: 1.0672  loss_cls: 0.1689  loss_bbox: 0.3179  loss_centerness: 0.5804
+2026/11/19 04:23:13 - mmengine - INFO - Epoch(train) [30][350/401]  base_lr: 1.9609e-04 lr: 1.9609e-04  eta: 0:30:29  time: 0.4302  data_time: 0.1072  memory: 3470  grad_norm: 8.6751  loss: 0.9129  loss_cls: 0.1160  loss_bbox: 0.2254  loss_centerness: 0.5716
+2026/11/19 04:23:22 - mmengine - INFO - Exp name: fcosaug_s2_20261119_023024
+2026/11/19 04:23:35 - mmengine - INFO - Epoch(train) [30][400/401]  base_lr: 1.9177e-04 lr: 1.9177e-04  eta: 0:30:07  time: 0.4289  data_time: 0.1250  memory: 3470  grad_norm: 10.9722  loss: 0.9689  loss_cls: 0.1272  loss_bbox: 0.2676  loss_centerness: 0.5741
+2026/11/19 04:23:36 - mmengine - INFO - Exp name: fcosaug_s2_20261119_023024
+2026/11/19 04:23:36 - mmengine - INFO - Saving checkpoint at 30 epochs
+2026/11/19 04:24:01 - mmengine - INFO - Epoch(val) [30][50/92]    eta: 0:00:20  time: 0.4928  data_time: 0.4052  memory: 3470  
+2026/11/19 04:24:23 - mmengine - INFO - Evaluating bbox...
+2026/11/19 04:24:23 - mmengine - INFO - bbox_mAP_copypaste: 0.363 0.755 0.248 -1.000 0.086 0.365
+2026/11/19 04:24:23 - mmengine - INFO - Epoch(val) [30][92/92]    coco/bbox_mAP: 0.3630  coco/bbox_mAP_50: 0.7550  coco/bbox_mAP_75: 0.2480  coco/bbox_mAP_s: -1.0000  coco/bbox_mAP_m: 0.0860  coco/bbox_mAP_l: 0.3650  data_time: 0.4052  time: 0.4967
+2026/11/19 04:24:45 - mmengine - INFO - Epoch(train) [31][ 50/401]  base_lr: 1.8741e-04 lr: 1.8741e-04  eta: 0:29:44  time: 0.4159  data_time: 0.0818  memory: 3470  grad_norm: 10.8296  loss: 0.9884  loss_cls: 0.1223  loss_bbox: 0.2937  loss_centerness: 0.5724
+2026/11/19 04:25:09 - mmengine - INFO - Epoch(train) [31][100/401]  base_lr: 1.8318e-04 lr: 1.8318e-04  eta: 0:29:21  time: 0.4769  data_time: 0.1686  memory: 3470  grad_norm: 12.9946  loss: 0.9892  loss_cls: 0.1440  loss_bbox: 0.2858  loss_centerness: 0.5594
+2026/11/19 04:25:32 - mmengine - INFO - Epoch(train) [31][150/401]  base_lr: 1.7899e-04 lr: 1.7899e-04  eta: 0:28:59  time: 0.4361  data_time: 0.1181  memory: 3470  grad_norm: 11.7817  loss: 1.0653  loss_cls: 0.1453  loss_bbox: 0.3336  loss_centerness: 0.5863
+2026/11/19 04:25:54 - mmengine - INFO - Epoch(train) [31][200/401]  base_lr: 1.7485e-04 lr: 1.7485e-04  eta: 0:28:36  time: 0.4423  data_time: 0.1479  memory: 3470  grad_norm: 10.0205  loss: 0.9532  loss_cls: 0.1141  loss_bbox: 0.2627  loss_centerness: 0.5764
+2026/11/19 04:26:16 - mmengine - INFO - Epoch(train) [31][250/401]  base_lr: 1.7075e-04 lr: 1.7075e-04  eta: 0:28:14  time: 0.4490  data_time: 0.0958  memory: 3470  grad_norm: 13.0677  loss: 0.9845  loss_cls: 0.1379  loss_bbox: 0.2724  loss_centerness: 0.5741
+2026/11/19 04:26:38 - mmengine - INFO - Epoch(train) [31][300/401]  base_lr: 1.6669e-04 lr: 1.6669e-04  eta: 0:27:51  time: 0.4072  data_time: 0.0957  memory: 3470  grad_norm: 12.0909  loss: 1.0293  loss_cls: 0.1436  loss_bbox: 0.3212  loss_centerness: 0.5645
+2026/11/19 04:27:01 - mmengine - INFO - Epoch(train) [31][350/401]  base_lr: 1.6268e-04 lr: 1.6268e-04  eta: 0:27:29  time: 0.4335  data_time: 0.1054  memory: 3470  grad_norm: 14.1202  loss: 1.1058  loss_cls: 0.1784  loss_bbox: 0.3409  loss_centerness: 0.5865
+2026/11/19 04:27:23 - mmengine - INFO - Epoch(train) [31][400/401]  base_lr: 1.5871e-04 lr: 1.5871e-04  eta: 0:27:06  time: 0.4323  data_time: 0.0942  memory: 3470  grad_norm: 9.4585  loss: 0.9959  loss_cls: 0.1412  loss_bbox: 0.2780  loss_centerness: 0.5767
+2026/11/19 04:27:24 - mmengine - INFO - Exp name: fcosaug_s2_20261119_023024
+2026/11/19 04:27:24 - mmengine - INFO - Saving checkpoint at 31 epochs
+2026/11/19 04:27:49 - mmengine - INFO - Epoch(val) [31][50/92]    eta: 0:00:20  time: 0.4948  data_time: 0.4070  memory: 2809  
+2026/11/19 04:28:10 - mmengine - INFO - Evaluating bbox...
+2026/11/19 04:28:10 - mmengine - INFO - bbox_mAP_copypaste: 0.351 0.713 0.302 -1.000 0.160 0.356
+2026/11/19 04:28:10 - mmengine - INFO - Epoch(val) [31][92/92]    coco/bbox_mAP: 0.3510  coco/bbox_mAP_50: 0.7130  coco/bbox_mAP_75: 0.3020  coco/bbox_mAP_s: -1.0000  coco/bbox_mAP_m: 0.1600  coco/bbox_mAP_l: 0.3560  data_time: 0.4031  time: 0.4925
+2026/11/19 04:28:33 - mmengine - INFO - Epoch(train) [32][ 50/401]  base_lr: 1.5471e-04 lr: 1.5471e-04  eta: 0:26:43  time: 0.4366  data_time: 0.1450  memory: 3470  grad_norm: 10.6834  loss: 1.0117  loss_cls: 0.1333  loss_bbox: 0.3011  loss_centerness: 0.5773
+2026/11/19 04:28:56 - mmengine - INFO - Epoch(train) [32][100/401]  base_lr: 1.5083e-04 lr: 1.5083e-04  eta: 0:26:21  time: 0.4675  data_time: 0.1504  memory: 3378  grad_norm: 9.7380  loss: 0.9693  loss_cls: 0.1195  loss_bbox: 0.2735  loss_centerness: 0.5763
+2026/11/19 04:29:18 - mmengine - INFO - Epoch(train) [32][150/401]  base_lr: 1.4700e-04 lr: 1.4700e-04  eta: 0:25:58  time: 0.4449  data_time: 0.1566  memory: 3470  grad_norm: 14.2020  loss: 1.0117  loss_cls: 0.1578  loss_bbox: 0.2738  loss_centerness: 0.5802
+2026/11/19 04:29:40 - mmengine - INFO - Epoch(train) [32][200/401]  base_lr: 1.4322e-04 lr: 1.4322e-04  eta: 0:25:35  time: 0.4405  data_time: 0.1014  memory: 3470  grad_norm: 9.2446  loss: 0.9291  loss_cls: 0.1282  loss_bbox: 0.2348  loss_centerness: 0.5662
+2026/11/19 04:30:02 - mmengine - INFO - Epoch(train) [32][250/401]  base_lr: 1.3948e-04 lr: 1.3948e-04  eta: 0:25:13  time: 0.4186  data_time: 0.0840  memory: 3470  grad_norm: 10.9101  loss: 1.0001  loss_cls: 0.1579  loss_bbox: 0.2670  loss_centerness: 0.5752
+2026/11/19 04:30:25 - mmengine - INFO - Epoch(train) [32][300/401]  base_lr: 1.3579e-04 lr: 1.3579e-04  eta: 0:24:50  time: 0.4455  data_time: 0.1232  memory: 3470  grad_norm: 10.3035  loss: 1.0336  loss_cls: 0.1515  loss_bbox: 0.2939  loss_centerness: 0.5882
+2026/11/19 04:30:47 - mmengine - INFO - Epoch(train) [32][350/401]  base_lr: 1.3215e-04 lr: 1.3215e-04  eta: 0:24:27  time: 0.4462  data_time: 0.1447  memory: 3470  grad_norm: 12.0874  loss: 1.1788  loss_cls: 0.1909  loss_bbox: 0.4046  loss_centerness: 0.5832
+2026/11/19 04:31:08 - mmengine - INFO - Epoch(train) [32][400/401]  base_lr: 1.2855e-04 lr: 1.2855e-04  eta: 0:24:05  time: 0.4350  data_time: 0.1230  memory: 3470  grad_norm: 10.4079  loss: 0.9561  loss_cls: 0.1310  loss_bbox: 0.2556  loss_centerness: 0.5695
+2026/11/19 04:31:09 - mmengine - INFO - Exp name: fcosaug_s2_20261119_023024
+2026/11/19 04:31:09 - mmengine - INFO - Saving checkpoint at 32 epochs
+2026/11/19 04:31:34 - mmengine - INFO - Epoch(val) [32][50/92]    eta: 0:00:20  time: 0.4933  data_time: 0.4044  memory: 3276  
+2026/11/19 04:31:55 - mmengine - INFO - Evaluating bbox...
+2026/11/19 04:31:55 - mmengine - INFO - bbox_mAP_copypaste: 0.351 0.720 0.278 -1.000 0.025 0.356
+2026/11/19 04:31:55 - mmengine - INFO - Epoch(val) [32][92/92]    coco/bbox_mAP: 0.3510  coco/bbox_mAP_50: 0.7200  coco/bbox_mAP_75: 0.2780  coco/bbox_mAP_s: -1.0000  coco/bbox_mAP_m: 0.0250  coco/bbox_mAP_l: 0.3560  data_time: 0.4037  time: 0.4922
+2026/11/19 04:32:19 - mmengine - INFO - Epoch(train) [33][ 50/401]  base_lr: 1.2494e-04 lr: 1.2494e-04  eta: 0:23:42  time: 0.4261  data_time: 0.0891  memory: 3470  grad_norm: 13.3721  loss: 1.0250  loss_cls: 0.1636  loss_bbox: 0.2871  loss_centerness: 0.5743
+2026/11/19 04:32:41 - mmengine - INFO - Epoch(train) [33][100/401]  base_lr: 1.2144e-04 lr: 1.2144e-04  eta: 0:23:19  time: 0.4785  data_time: 0.1586  memory: 3470  grad_norm: 12.3279  loss: 1.0584  loss_cls: 0.1792  loss_bbox: 0.2994  loss_centerness: 0.5799
+2026/11/19 04:33:04 - mmengine - INFO - Epoch(train) [33][150/401]  base_lr: 1.1799e-04 lr: 1.1799e-04  eta: 0:22:57  time: 0.4602  data_time: 0.1161  memory: 3470  grad_norm: 9.1821  loss: 0.9578  loss_cls: 0.1220  loss_bbox: 0.2688  loss_centerness: 0.5670
+2026/11/19 04:33:12 - mmengine - INFO - Exp name: fcosaug_s2_20261119_023024
+2026/11/19 04:33:26 - mmengine - INFO - Epoch(train) [33][200/401]  base_lr: 1.1459e-04 lr: 1.1459e-04  eta: 0:22:34  time: 0.4612  data_time: 0.1309  memory: 3470  grad_norm: 11.6757  loss: 0.9836  loss_cls: 0.1315  loss_bbox: 0.2883  loss_centerness: 0.5639
+2026/11/19 04:33:48 - mmengine - INFO - Epoch(train) [33][250/401]  base_lr: 1.1124e-04 lr: 1.1124e-04  eta: 0:22:12  time: 0.4282  data_time: 0.0995  memory: 3378  grad_norm: 11.6267  loss: 1.0480  loss_cls: 0.1665  loss_bbox: 0.2984  loss_centerness: 0.5830
+2026/11/19 04:34:10 - mmengine - INFO - Epoch(train) [33][300/401]  base_lr: 1.0794e-04 lr: 1.0794e-04  eta: 0:21:49  time: 0.4154  data_time: 0.1082  memory: 3470  grad_norm: 10.4874  loss: 0.9242  loss_cls: 0.1190  loss_bbox: 0.2373  loss_centerness: 0.5679
+2026/11/19 04:34:32 - mmengine - INFO - Epoch(train) [33][350/401]  base_lr: 1.0469e-04 lr: 1.0469e-04  eta: 0:21:26  time: 0.4139  data_time: 0.0948  memory: 3470  grad_norm: 9.9107  loss: 0.9013  loss_cls: 0.1030  loss_bbox: 0.2239  loss_centerness: 0.5744
+2026/11/19 04:34:54 - mmengine - INFO - Epoch(train) [33][400/401]  base_lr: 1.0149e-04 lr: 1.0149e-04  eta: 0:21:04  time: 0.4198  data_time: 0.1214  memory: 3470  grad_norm: 11.4653  loss: 1.0195  loss_cls: 0.1581  loss_bbox: 0.2936  loss_centerness: 0.5677
+2026/11/19 04:34:54 - mmengine - INFO - Exp name: fcosaug_s2_20261119_023024
+2026/11/19 04:34:54 - mmengine - INFO - Saving checkpoint at 33 epochs
+2026/11/19 04:35:20 - mmengine - INFO - Epoch(val) [33][50/92]    eta: 0:00:20  time: 0.4938  data_time: 0.4021  memory: 3110  
+2026/11/19 04:35:41 - mmengine - INFO - Evaluating bbox...
+2026/11/19 04:35:41 - mmengine - INFO - bbox_mAP_copypaste: 0.353 0.746 0.284 -1.000 0.113 0.354
+2026/11/19 04:35:41 - mmengine - INFO - Epoch(val) [33][92/92]    coco/bbox_mAP: 0.3530  coco/bbox_mAP_50: 0.7460  coco/bbox_mAP_75: 0.2840  coco/bbox_mAP_s: -1.0000  coco/bbox_mAP_m: 0.1130  coco/bbox_mAP_l: 0.3540  data_time: 0.4038  time: 0.4935
+2026/11/19 04:35:41 - mmengine - INFO - the monitored metric did not improve in the last 8 records. best score: 0.769. 
