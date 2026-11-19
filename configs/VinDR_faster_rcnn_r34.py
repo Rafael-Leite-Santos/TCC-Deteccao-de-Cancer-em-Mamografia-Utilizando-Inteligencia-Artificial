@@ -1,0 +1,258 @@
+# ============================================================
+# CONFIG: Faster R-CNN + ResNet-50 para VinDr-Mammo (mmdet 3.x)
+# ------------------------------------------------------------
+# Mesmo modelo e agendamento do ultimo Faster R-CNN do CBIS-DDSM
+# (40 epocas, cosseno, parada pelo mAP@0,50 com paciencia 8).
+# VARIANTE BACKBONE (16/11/2026, ponto 4 do orientador): ResNet-34 no lugar da ResNet-50.
+# Mudam so depth, o pre-treino do ImageNet e os canais de entrada do FPN.
+# Mantem o ValLossHook (loss nas imagens de validacao por epoca) e weight_decay 1e-4.
+# Muda so o dataset e a leitura do DICOM (LoadVindrDicom), para
+# que a comparacao CBIS x VinDr meca o efeito dos dados.
+# ============================================================
+
+default_scope = 'mmdet'
+
+custom_imports = dict(
+    imports=['VinDR_pipeline', 'val_loss_hook'],      # registra LoadVindrDicom e VindrMammoDataset
+    allow_failed_imports=False
+)
+
+# ---- CAMINHOS (ajuste aqui) ----
+VINDR_ROOT  = 'data/VinDr-Mammo'                 # pasta do dataset
+IMAGES_ROOT = VINDR_ROOT + '/images'                           # images/<study_id>/<image_id>.dicom
+ANNOTS_DIR  = 'annotations_VinDR'  # saida do VinDR_prepare.py
+
+# ---- MODELO ----
+model = dict(
+    type='FasterRCNN',
+    data_preprocessor=dict(
+        type='DetDataPreprocessor',
+        mean=[123.675, 116.28, 103.53],
+        std=[58.395, 57.12, 57.375],
+        bgr_to_rgb=True,
+        pad_size_divisor=32
+    ),
+    backbone=dict(
+        type='ResNet',
+        depth=34,
+        num_stages=4,
+        out_indices=(0, 1, 2, 3),
+        frozen_stages=1,
+        norm_cfg=dict(type='BN', requires_grad=True),
+        norm_eval=True,
+        style='pytorch',
+        init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet34')
+    ),
+    neck=dict(
+        type='FPN',
+        in_channels=[64, 128, 256, 512],   # saidas da ResNet-34 (BasicBlock)
+        out_channels=256,
+        num_outs=5
+    ),
+    rpn_head=dict(
+        type='RPNHead',
+        in_channels=256,
+        feat_channels=256,
+        anchor_generator=dict(
+            type='AnchorGenerator',
+            scales=[4, 8, 16],          # ancoras menores, para massas pequenas
+            ratios=[0.5, 1.0, 2.0],
+            strides=[4, 8, 16, 32, 64]
+        ),
+        bbox_coder=dict(
+            type='DeltaXYWHBBoxCoder',
+            target_means=[.0, .0, .0, .0],
+            target_stds=[1.0, 1.0, 1.0, 1.0]
+        ),
+        loss_cls=dict(type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0),
+        loss_bbox=dict(type='L1Loss', loss_weight=1.0)
+    ),
+    roi_head=dict(
+        type='StandardRoIHead',
+        bbox_roi_extractor=dict(
+            type='SingleRoIExtractor',
+            roi_layer=dict(type='RoIAlign', output_size=7, sampling_ratio=0),
+            out_channels=256,
+            featmap_strides=[4, 8, 16, 32]
+        ),
+        bbox_head=dict(
+            type='Shared2FCBBoxHead',
+            in_channels=256,
+            fc_out_channels=1024,
+            roi_feat_size=7,
+            num_classes=1,              # so 'mass'
+            bbox_coder=dict(
+                type='DeltaXYWHBBoxCoder',
+                target_means=[0., 0., 0., 0.],
+                target_stds=[0.1, 0.1, 0.2, 0.2]
+            ),
+            reg_class_agnostic=False,
+            loss_cls=dict(type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0),
+            loss_bbox=dict(type='L1Loss', loss_weight=1.0)
+        )
+    ),
+    train_cfg=dict(
+        rpn=dict(
+            assigner=dict(type='MaxIoUAssigner', pos_iou_thr=0.7, neg_iou_thr=0.3,
+                          min_pos_iou=0.3, match_low_quality=True, ignore_iof_thr=-1),
+            sampler=dict(type='RandomSampler', num=256, pos_fraction=0.5,
+                         neg_pos_ub=-1, add_gt_as_proposals=False),
+            allowed_border=-1,
+            pos_weight=-1,
+            debug=False
+        ),
+        rpn_proposal=dict(
+            nms_pre=2000, max_per_img=1000,
+            nms=dict(type='nms', iou_threshold=0.7),
+            min_bbox_size=0
+        ),
+        rcnn=dict(
+            assigner=dict(type='MaxIoUAssigner', pos_iou_thr=0.5, neg_iou_thr=0.5,
+                          min_pos_iou=0.5, match_low_quality=False, ignore_iof_thr=-1),
+            sampler=dict(type='RandomSampler', num=512, pos_fraction=0.25,
+                         neg_pos_ub=-1, add_gt_as_proposals=True),
+            pos_weight=-1,
+            debug=False
+        )
+    ),
+    test_cfg=dict(
+        rpn=dict(nms_pre=1000, max_per_img=1000,
+                 nms=dict(type='nms', iou_threshold=0.7), min_bbox_size=0),
+        rcnn=dict(score_thr=0.05,
+                  nms=dict(type='nms', iou_threshold=0.5),
+                  max_per_img=100)
+    )
+)
+
+# ---- PIPELINES ----
+train_pipeline = [
+    dict(type='LoadVindrDicom'),
+    dict(type='LoadAnnotations', with_bbox=True),
+    dict(type='Resize', scale=(1024, 1024), keep_ratio=True),
+    dict(type='RandomFlip', prob=0.5),
+    dict(type='PackDetInputs')
+]
+
+# Resize ANTES das anotacoes: as caixas ficam na escala original e o
+# CocoMetric compara na escala original (igual ao CBIS)
+val_pipeline = [
+    dict(type='LoadVindrDicom'),
+    dict(type='Resize', scale=(1024, 1024), keep_ratio=True),
+    dict(type='LoadAnnotations', with_bbox=True),
+    dict(type='PackDetInputs')
+]
+
+# ---- DATALOADERS ----
+train_dataloader = dict(
+    batch_size=2,           # reduza para 1 se faltar memoria na GPU
+    num_workers=2,
+    persistent_workers=True,
+    sampler=dict(type='DefaultSampler', shuffle=True),
+    dataset=dict(
+        type='VindrMammoDataset',
+        data_root='',                      # vazio: ann_file fica relativo a raiz do clone
+        ann_file=ANNOTS_DIR + '/train.json',
+        data_prefix=dict(img=IMAGES_ROOT),  # pasta das imagens
+        pipeline=train_pipeline
+    )
+)
+
+val_dataloader = dict(
+    batch_size=1,
+    num_workers=0,
+    persistent_workers=False,
+    sampler=dict(type='DefaultSampler', shuffle=False),
+    dataset=dict(
+        type='VindrMammoDataset',
+        data_root='',                      # vazio: ann_file fica relativo a raiz do clone
+        ann_file=ANNOTS_DIR + '/val.json',
+        data_prefix=dict(img=IMAGES_ROOT),  # pasta das imagens
+        test_mode=True,
+        pipeline=val_pipeline
+    )
+)
+
+# Teste = split "test" oficial do VinDr (so usado no fim do treino)
+test_dataloader = dict(
+    batch_size=1,
+    num_workers=0,
+    persistent_workers=False,
+    sampler=dict(type='DefaultSampler', shuffle=False),
+    dataset=dict(
+        type='VindrMammoDataset',
+        data_root='',                      # vazio: ann_file fica relativo a raiz do clone
+        ann_file=ANNOTS_DIR + '/test.json',
+        data_prefix=dict(img=IMAGES_ROOT),  # pasta das imagens
+        test_mode=True,
+        pipeline=val_pipeline
+    )
+)
+
+val_evaluator = dict(type='CocoMetric', ann_file=ANNOTS_DIR + '/val.json',
+                     metric='bbox', format_only=False)
+test_evaluator = dict(type='CocoMetric', ann_file=ANNOTS_DIR + '/test.json',
+                      metric='bbox', format_only=False)
+
+# ---- TREINO (igual ao ultimo Faster R-CNN do CBIS) ----
+train_cfg = dict(type='EpochBasedTrainLoop', max_epochs=40, val_interval=1)
+val_cfg = dict(type='ValLoop')
+test_cfg = dict(type='TestLoop')
+
+optim_wrapper = dict(
+    type='OptimWrapper',
+    optimizer=dict(type='SGD', lr=0.0025, momentum=0.9, weight_decay=0.0001)
+)
+
+param_scheduler = [
+    dict(type='LinearLR', start_factor=0.001, by_epoch=False, begin=0, end=500),
+    dict(type='CosineAnnealingLR', T_max=40, eta_min=1e-5,
+         begin=0, end=40, by_epoch=True, convert_to_iter_based=True)
+]
+
+# ---- LOG, CHECKPOINT E PARADA (pelo mAP@0,50) ----
+default_hooks = dict(
+    checkpoint=dict(
+        type='CheckpointHook',
+        interval=1,
+        max_keep_ckpts=3,
+        save_best='coco/bbox_mAP_50',
+        rule='greater'
+    ),
+    logger=dict(type='LoggerHook', interval=50)
+)
+
+val_loss_pipeline = [
+    dict(type='LoadVindrDicom'),
+    dict(type='LoadAnnotations', with_bbox=True),   # antes do Resize: as caixas acompanham a imagem
+    dict(type='Resize', scale=(1024, 1024), keep_ratio=True),
+    dict(type='PackDetInputs')
+]
+
+custom_hooks = [
+    # Loss de validacao por epoca (so mede; nao muda o treino nem a parada)
+    dict(
+        type='ValLossHook',
+        dataloader=dict(
+            batch_size=1,
+            num_workers=0,
+            sampler=dict(type='DefaultSampler', shuffle=False),
+            dataset=dict(
+                type='VindrMammoDataset',
+                data_root='',
+                ann_file=ANNOTS_DIR + '/val.json',
+                data_prefix=dict(img=IMAGES_ROOT),
+                pipeline=val_loss_pipeline
+            )
+        )
+    ),
+    dict(
+        type='EarlyStoppingHook',
+        monitor='coco/bbox_mAP_50',
+        rule='greater',
+        min_delta=0.005,
+        patience=8
+    )
+]
+
+work_dir = './work_dirs/VinDR_faster_rcnn_r34_40ep_parada_map50'
+load_from = None   # so o backbone do ImageNet, como no CBIS
