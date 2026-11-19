@@ -51,9 +51,14 @@ from VinDR_pipeline import carregar_vindr  # tambem registra LoadVindrDicom e Vi
 from metricas import THR_PADRAO, tpr_fppi
 
 MODELOS = [
-    ('Faster R-CNN', 'configs/VinDR_faster_rcnn.py'),
-    ('FCOS',         'configs/VinDR_fcos.py'),
-    ('ATSS',         'configs/VinDR_atss.py'),
+    # 18/11/2026: Faster R-CNN com o pacote de aumento de dados (semente 2, ep. 25),
+    # escolhido pela validacao entre as 3 sementes. Antes: configs/VinDR_faster_rcnn.py.
+    ('Faster R-CNN', 'configs/sementes/r50aug_s2.py'),
+    # 19/11/2026: FCOS e ATSS com o mesmo pacote de aumento de dados, semente com o maior
+    # mAP@0,50 de validacao entre 3 (FCOS s0: 79,3%; ATSS s0: 76,2%).
+    # Antes: configs/VinDR_fcos.py e configs/VinDR_atss.py (sem aumento).
+    ('FCOS',         'configs/sementes/fcosaug_s0.py'),
+    ('ATSS',         'configs/sementes/atssaug_s0.py'),
 ]
 PASTA_SAIDA = 'resultados_ensemble'
 PESOS_PADRAO = [1, 1, 1]   # confirmado na validacao (melhor que [1, 0.5, 1])
@@ -74,7 +79,10 @@ def pasta_do_modelo(config, work_dirs=None):
     work_dir = Config.fromfile(config).work_dir
     work_dirs = work_dirs or os.environ.get('WORK_DIRS')
     if work_dirs:
-        return os.path.join(work_dirs, os.path.basename(os.path.normpath(work_dir)))
+        # mantem as subpastas abaixo de work_dirs (ex.: sementes/r50aug_s2), nao so o ultimo nome
+        partes = os.path.normpath(work_dir).replace('\\', '/').split('/')
+        rel = partes[partes.index('work_dirs') + 1:] if 'work_dirs' in partes else partes[-1:]
+        return os.path.join(work_dirs, *rel)
     return work_dir
 
 
@@ -89,13 +97,21 @@ def carregar_modelos(device, work_dirs=None):
 
 
 def detectar_ensemble(modelos, caminho, thr, pesos=None, iou_wbf=IOU_WBF_PADRAO,
-                      skip=SKIP_PADRAO, filtros=True):
+                      skip=SKIP_PADRAO, filtros=True, so=None):
     """Uma imagem: roda os 3 modelos, funde com o mesmo fundir() da avaliacao e
     aplica os mesmos filtros do VinDR_inference.detectar(). Devolve
-    (imagem, deteccoes, descartadas), no formato do detectar()."""
+    (imagem, deteccoes, descartadas), no formato do detectar().
+    so='<nome do modelo>' (ex.: 'FCOS'): roda so esse modelo, sem fusao (mesmos filtros);
+    usado pelo seletor de modelo da interface (19/11/2026)."""
     from VinDR_inference import filtrar  # import aqui: so a interface precisa dele
     img, mascara = carregar_vindr(caminho)
     h, w = img.shape[:2]
+    if so is not None:
+        model = {nome: m for nome, _, _, m in modelos}[so]   # KeyError se o nome nao existir
+        pred = inference_detector(model, img).pred_instances
+        caixas, descartadas = filtrar(pred.bboxes.cpu().numpy(), pred.scores.cpu().numpy(),
+                                      mascara, thr, filtros)
+        return img, caixas, descartadas
     deteccoes = {}
     for nome, _, _, model in modelos:
         pred = inference_detector(model, img).pred_instances
@@ -111,10 +127,15 @@ def detectar_ensemble(modelos, caminho, thr, pesos=None, iou_wbf=IOU_WBF_PADRAO,
 def rodar_modelos(cfg_base, split, refazer):
     """Deteccoes de cada modelo em cada imagem: {nome: {image_id: [[x1,y1,x2,y2,score], ...]}}."""
     cache = os.path.join(PASTA_SAIDA, f'deteccoes_{split}.json')
+    ckpts = {nome: melhor_checkpoint(pasta_do_modelo(config)) for nome, config in MODELOS}
     if os.path.isfile(cache) and not refazer:
-        print('Usando deteccoes em cache:', cache, '(use --refazer para rodar os modelos de novo)')
         with open(cache, encoding='utf-8') as f:
-            return {n: {int(k): v for k, v in d.items()} for n, d in json.load(f).items()}
+            dados = json.load(f)
+        # o cache guarda quais checkpoints o geraram; se mudou algum modelo, roda de novo
+        if dados.get('_checkpoints') == {n: os.path.normpath(c) for n, c in ckpts.items()}:
+            print('Usando deteccoes em cache:', cache, '(use --refazer para rodar os modelos de novo)')
+            return {n: {int(k): v for k, v in d.items()} for n, d in dados.items() if n != '_checkpoints'}
+        print('Cache de outros checkpoints (ou sem registro): rodando os modelos de novo.')
 
     with open(os.path.join(cfg_base.ANNOTS_DIR, f'{split}.json'), encoding='utf-8') as f:
         imagens = json.load(f)['images']
@@ -136,7 +157,7 @@ def rodar_modelos(cfg_base, split, refazer):
 
     os.makedirs(PASTA_SAIDA, exist_ok=True)
     with open(cache, 'w', encoding='utf-8') as f:
-        json.dump(deteccoes, f)
+        json.dump(dict(deteccoes, _checkpoints={n: os.path.normpath(c) for n, c in ckpts.items()}), f)
     return deteccoes
 
 
