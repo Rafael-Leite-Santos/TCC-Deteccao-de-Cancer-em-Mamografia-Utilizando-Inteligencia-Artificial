@@ -218,3 +218,18 @@ automaticamente (registro de checkpoints, item 7).
   (0,6635 -> 66,4, como no terminal). Fim de linha CRLF preservado.
 - Testado: sintaxe Python/JS; `ler_metricas()` com os arquivos reais (metricas_ok = true); layout no
   Chromium com um /status simulado (sem erros no console). NAO TESTADO: servidor com os modelos reais.
+
+---
+
+## 10. Arquivos herdados em legado/ e verificar.py do ensemble v3 (registrado em 19/11)
+
+**O que era:** `mass_inference.py`, `mammo_dataset.py`, `yolo_v3_config.py` (Digital Eye, API mmdet 2.x)
+e `mass_inference_dicom_v2.py` (CBIS, nao desenha as caixas) ficavam na raiz sem nenhum script os usar.
+O `verificar.py` conferia os configs do ensemble antigo (`VinDR_faster_rcnn.py`, `VinDR_fcos.py`,
+`VinDR_atss.py`), so com `ENSEMBLE=1`, e montava o caminho de `WORK_DIRS` so com o ultimo nome da pasta.
+
+**O que mudou (pedido do Rafael):** os 4 arquivos foram para `legado/` (README atualizado). O `verificar.py`
+le a lista `MODELOS` do `VinDR_ensemble.py` (sem importar o mmdet), usa a mesma regra do `main.py`
+(ensemble e o padrao sem `CONFIG`/`CHECKPOINT`; `ENSEMBLE=0` forca o modelo unico) e mantem as subpastas
+de `work_dirs` com `WORK_DIRS` (ex.: `sementes/r50aug_s2`). Logs dos experimentos de 12 a 19/11 copiados
+de `work_dirs/` para `resultados/logs/` (98 arquivos; sem IDs do VinDr).

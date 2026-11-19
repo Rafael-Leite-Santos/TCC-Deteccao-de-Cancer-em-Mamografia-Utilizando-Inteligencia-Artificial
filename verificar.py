@@ -182,7 +182,10 @@ def procurar_best(config, rotulo=""):
         linha(AVISO, f"{rotulo}Não consegui ler o work_dir de {config}; o servidor vai tentar mesmo assim.")
         return
     if os.environ.get("WORK_DIRS"):
-        pasta = os.path.join(os.environ["WORK_DIRS"], os.path.basename(os.path.normpath(work_dir)))
+        # mantém as subpastas abaixo de work_dirs (ex.: sementes/r50aug_s2), como o VinDR_ensemble.py
+        partes = os.path.normpath(work_dir).replace("\\", "/").split("/")
+        rel = partes[partes.index("work_dirs") + 1:] if "work_dirs" in partes else partes[-1:]
+        pasta = os.path.join(os.environ["WORK_DIRS"], *rel)
         origem = "a variável WORK_DIRS"
     else:
         pasta = os.path.abspath(work_dir)  # relativo à pasta ATUAL, como no script
@@ -206,12 +209,30 @@ def procurar_best(config, rotulo=""):
 
 
 print("\n[7] Checkpoint do modelo treinado (best_*.pth)")
-if os.environ.get("ENSEMBLE") == "1":
-    print("  (ENSEMBLE=1: Faster R-CNN + FCOS + ATSS; CONFIG e CHECKPOINT são ignorados)")
+def configs_do_ensemble():
+    """Configs da lista MODELOS do VinDR_ensemble.py, lidos do texto (sem importar mmdet)."""
+    import re
+    try:
+        with open("VinDR_ensemble.py", encoding="utf-8") as f:
+            txt = f.read()
+        bloco = txt[txt.index("MODELOS = ["):txt.index("]", txt.index("MODELOS = ["))]
+        return re.findall(r"'(configs/[^']+\.py)'", bloco)
+    except (OSError, ValueError):
+        return []
+
+
+# Mesma regra do main.py (19/11/2026): sem CONFIG/CHECKPOINT, o padrão é o ensemble; ENSEMBLE=0 força o modelo único
+_ens = os.environ.get("ENSEMBLE")
+if _ens == "1" or (_ens != "0" and not os.environ.get("CONFIG") and not os.environ.get("CHECKPOINT")):
+    print("  (ensemble: os modelos da lista MODELOS do VinDR_ensemble.py; CONFIG e CHECKPOINT são ignorados)")
     if not importa("ensemble_boxes")[0]:
         linha(ERRO, "ensemble_boxes não instalado", "É a biblioteca do WBF, a mesma do VinDR_ensemble.py.")
         motivos_demo.append("falta o ensemble_boxes")
-    for cfg_ens in ("configs/VinDR_faster_rcnn.py", "configs/VinDR_fcos.py", "configs/VinDR_atss.py"):
+    lista = configs_do_ensemble()
+    if not lista:
+        linha(ERRO, "Não consegui ler a lista MODELOS do VinDR_ensemble.py")
+        motivos_demo.append("lista de modelos do ensemble ilegível")
+    for cfg_ens in lista:
         if os.path.isfile(cfg_ens):
             procurar_best(cfg_ens, f"{os.path.basename(cfg_ens)}: ")
         else:
