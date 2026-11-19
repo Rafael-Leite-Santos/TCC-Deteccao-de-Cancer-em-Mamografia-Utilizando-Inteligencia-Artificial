@@ -1,0 +1,24 @@
+sequenceDiagram
+  autonumber
+  participant U as Navegador
+  participant A as main.py FastAPI 1 worker
+  participant D as VinDR_inference / VinDR_ensemble
+  participant P as VinDR_pipeline.carregar_vindr()
+  participant M as Modelo(s) MMDetection
+  Note over A: Na subida: carregar_modelo() uma vez<br/>falha leva ao modo demo com banner
+  U->>A: GET /status
+  A-->>U: modo_demo, modelo, thr_padrao 0,3
+  U->>A: POST /analisar  multipart arquivo .dcm
+  A->>A: grava em arquivo temporário e valida com pydicom, se inválido devolve 400
+  A->>A: adquire a trava - uma inferência por vez
+  A->>D: detectar() ou detectar_ensemble com THR_MIN 0,05
+  D->>P: lê DICOM, windowing, MONOCHROME1, máscara da mama
+  P-->>D: imagem 8 bits  no mesmo tamanho do DICOM + máscara
+  D->>M: inference_detector  com Resize 1024 do config
+  M-->>D: caixas + scores  em coordenadas do DICOM
+  D->>D: ensemble: WBF · filtros (centro fora da mama, caixa maior que 30%)
+  D-->>A: imagem, deteccoes, descartadas
+  A->>A: PNG em base64 · anotações do CSV · mapear_para_dicom() 1:1
+  A->>A: apaga o arquivo temporário - nada é armazenado
+  A-->>U: JSON com imagem_png, deteccoes, anotacoes, tempo_s, modelo, coordenadas
+  U->>U: desenha base + camadas, filtra pelo controle deslizante  a partir de 0,30

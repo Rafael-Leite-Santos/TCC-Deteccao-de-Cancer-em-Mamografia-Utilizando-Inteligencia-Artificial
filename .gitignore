@@ -34,3 +34,8 @@ _antigos/
 ambiente_local.txt
 .impeccable/
 .DS_Store
+
+# Documentos de trabalho do TCC (ficam so no PC)
+ARQUITETURA.docx
+ARQUITETURA.md
+Arquitetura_e_pipeline_TCC.docx

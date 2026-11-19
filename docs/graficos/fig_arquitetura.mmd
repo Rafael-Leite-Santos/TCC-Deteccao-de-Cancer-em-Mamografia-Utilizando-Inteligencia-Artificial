@@ -1,0 +1,45 @@
+flowchart LR
+  subgraph DADOS["Dados (fora do git, HD D: via junction data/)"]
+    CSV["finding_annotations.csv"]
+    DCM["images/&lt;study_id&gt;/&lt;image_id&gt;.dicom"]
+  end
+  subgraph PREP["Preparação (1 vez)"]
+    P["VinDR_prepare.py<br/>CSV → COCO<br/>train / val (por estudo) / test oficial"]
+  end
+  subgraph NUCLEO["Núcleo de pré-processamento"]
+    PIPE["VinDR_pipeline.py<br/>carregar_vindr()<br/>LoadVindrDicom · VindrMammoDataset"]
+  end
+  subgraph TREINO["Treino e avaliação"]
+    CFG["configs/<br/>VinDR_faster_rcnn · _fcos · _atss"]
+    T["VinDR_train.py<br/>MMEngine Runner"]
+    W["work_dirs/*/best_*.pth<br/>(fora do git)"]
+    L["resultados/logs/"]
+  end
+  subgraph USO["Inferência e métricas"]
+    INF["VinDR_inference.py<br/>detectar() · filtrar()"]
+    ENS["VinDR_ensemble.py<br/>WBF · avaliar_coco()"]
+    MET["metricas.py<br/>tpr_fppi() · THR_PADRAO 0,3"]
+    RES["resultados/resultado_*.json"]
+  end
+  subgraph WEB["Interface web"]
+    API["main.py (FastAPI)<br/>GET / · GET /status · POST /analisar"]
+    UI["index.html<br/>canvas: imagem + camadas"]
+  end
+  CSV --> P --> ANN["annotations_VinDR/*.json"]
+  ANN --> T
+  DCM --> PIPE
+  CFG --> T
+  PIPE --> T
+  T --> W
+  T --> L
+  W --> INF
+  W --> ENS
+  PIPE --> INF
+  PIPE --> ENS
+  MET --> INF
+  MET --> ENS
+  ENS --> RES
+  INF --> API
+  ENS --> API
+  CSV -. caixas verdes .-> API
+  API <--> UI
