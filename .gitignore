@@ -19,6 +19,7 @@ images/
 work_dirs/
 resultados_VinDR/
 resultados_ensemble/
+resultados_ensemble_*/
 *.pth
 *.log
 !resultados/logs/**/*.log
