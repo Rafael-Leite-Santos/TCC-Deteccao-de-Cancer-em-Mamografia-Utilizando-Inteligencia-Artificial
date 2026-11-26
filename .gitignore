@@ -9,6 +9,7 @@ data/
 annotations/
 annotations_VinDR/
 annotations_VinDR_recorte/
+annotations_VinDR_neg1/
 *.dcm
 *.dicom
 images/
@@ -39,3 +40,5 @@ ambiente_local.txt
 ARQUITETURA.docx
 ARQUITETURA.md
 Arquitetura_e_pipeline_TCC.docx
+# monografia (documento de trabalho, fica fora do git)
+tcc2_*.docx
